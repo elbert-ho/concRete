@@ -31,7 +31,7 @@ pacman::p_load(ggplot2, dplyr, tidyverse, gridExtra, ggrepel, plotly, skimr, tid
 ```
 
 ```{r}
-consumption <- read.csv("data/AEP_hourly.csv", header=T, stringsAsFactors = FALSE)
+consumption <- read.csv("data/hourly-consumption/AEP_hourly.csv", header=T, stringsAsFactors = FALSE)
 #names(consumption)
 #consumption[1:3,]
 
