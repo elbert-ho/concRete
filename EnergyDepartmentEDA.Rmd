@@ -1,0 +1,37 @@
+---
+title: "EnergyDepartmentEDA"
+author: "Alex Han"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = "hide", fig.width=8, fig.height=4)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel)
+```
+
+`## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+```{r}
+data1 <- read.csv('data/EIAData.csv')
+names(data1)
+data2 <- data1 %>% select(c(response__data__period, response__data__subba, response__data__subba.name, response__data__parent.name, response__data__value))
+unique(data2$response__data__parent.name)
+
+data2 <- data2 %>% rename(data_period = response__data__period)
+
+data2 <- data2 %>% rename(c("data_subba" = 'response__data__subba', 'data_subba.name' = 'response__data__subba.name', 'data_parent,name' = 'response__data__parent.name', 'MWh' = 'response__data__value'))
+```
+ MWh is the value in megawatthours
+ 
