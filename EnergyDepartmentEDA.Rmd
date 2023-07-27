@@ -10,7 +10,9 @@ knitr::opts_chunk$set(echo = TRUE, results = "hide", fig.width=8, fig.height=4)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel)
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel,car,DBI)
+#library(RMySQL)
+#install.packages("RMySQL") 
 ```
 
 `## R Markdown
@@ -32,6 +34,17 @@ unique(data2$response__data__parent.name)
 data2 <- data2 %>% rename(data_period = response__data__period)
 
 data2 <- data2 %>% rename(c("data_subba" = 'response__data__subba', 'data_subba.name' = 'response__data__subba.name', 'data_parent,name' = 'response__data__parent.name', 'MWh' = 'response__data__value'))
+
+data2 <- data2 %>% rename('data_parent.name' = 'data_parent,name')
 ```
  MWh is the value in megawatthours
  
+```{r}
+fit0 = lm(MWh~data_period, data2)
+summary(fit0)
+Anova(fit0)
+
+unique(data2$data_subba.name)
+```
+
+pretty useless without climate data
