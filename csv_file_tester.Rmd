@@ -32,63 +32,9 @@ pacman::p_load(ggplot2, dplyr, tidyverse, gridExtra, ggrepel, plotly, skimr, tid
 
 ```{r}
 consumption <- read.csv("data/hourly-consumption/AEP_hourly.csv", header=T, stringsAsFactors = FALSE)
-xml_data <- read_xml("C:/Users/vdich/Documents/R_projects/final_project_repo/Electricity_Balance_Data_2011-2019_DK1.xml")
-rows <- xml_find_all(xml_data, "//row")
-
-# Initialize lists to store data for each column
-HourUTC <- list()
-HourDK <- list()
-PriceArea <- list()
-GrossCon <- list()
-NetCon <- list()
-LocalPowerProd <- list()
-OffshoreWindPower <- list()
-OnshoreWindPower <- list()
-CentralProd <- list()
-ElectricBoilerCon <- list()
-SolarPowerProd <- list()
-ExchangeContinent <- list()
-ExchangeGreatBelt <- list()
-ExchangeNordicCountries <- list()
-
-# Set the maximum number of rows to process
-max_rows <- 1000
-
-# Loop through each row and extract data for each column
-for (i in seq_len(min(max_rows, length(rows)))) {
-  row <- rows[[i]]
-  
-  # Print progress message
-  cat("Processing row", i, "of", min(max_rows, length(rows)), "\n")
-  
-  # Extract data for each column
-  HourUTC <- c(HourUTC, xml_text(xml_find_first(row, "./HourUTC")))
-  HourDK <- c(HourDK, xml_text(xml_find_first(row, "./HourDK")))
-  PriceArea <- c(PriceArea, xml_text(xml_find_first(row, "./PriceArea")))
-  GrossCon <- c(GrossCon, xml_text(xml_find_first(row, "./GrossCon")))
-  NetCon <- c(NetCon, xml_text(xml_find_first(row, "./NetCon")))
-  LocalPowerProd <- c(LocalPowerProd, xml_text(xml_find_first(row, "./LocalPowerProd")))
-  OffshoreWindPower <- c(OffshoreWindPower, xml_text(xml_find_first(row, "./OffshoreWindPower")))
-  OnshoreWindPower <- c(OnshoreWindPower, xml_text(xml_find_first(row, "./OnshoreWindPower")))
-  CentralProd <- c(CentralProd, xml_text(xml_find_first(row, "./CentralProd")))
-  ElectricBoilerCon <- c(ElectricBoilerCon, xml_text(xml_find_first(row, "./ElectricBoilerCon")))
-  SolarPowerProd <- c(SolarPowerProd, xml_text(xml_find_first(row, "./SolarPowerProd")))
-  ExchangeContinent <- c(ExchangeContinent, xml_text(xml_find_first(row, "./ExchangeContinent")))
-  ExchangeGreatBelt <- c(ExchangeGreatBelt, xml_text(xml_find_first(row, "./ExchangeGreatBelt")))
-  ExchangeNordicCountries <- c(ExchangeNordicCountries, xml_text(xml_find_first(row, "./ExchangeNordicCountries")))
-}
-
-# Create a data.frame from the extracted data
-data_df <- data.frame(
-  HourUTC, HourDK, PriceArea, GrossCon, NetCon, LocalPowerProd,
-  OffshoreWindPower, OnshoreWindPower, CentralProd, ElectricBoilerCon,
-  SolarPowerProd, ExchangeContinent, ExchangeGreatBelt, ExchangeNordicCountries
-)
-
-# Write the data.frame to a CSV file
-write.csv(data_df, file = "C:/Users/vdich/Documents/R_projects/final_project_repo/output.csv", row.names = FALSE)
-
-
+consumption_denmark <- read.csv("data/data_DK1.csv", header=T, stringsAsFactors = FALSE)
+#names(consumption_denmark)
+consumption_denmark <- consumption_denmark[, c("HourDK", "GrossCon")]
 
 
 #names(consumption)

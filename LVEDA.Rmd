@@ -1,0 +1,44 @@
+---
+title: "LVEDA.Rmd"
+output: html_document
+date: "2023-07-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate)
+```
+
+
+```{r}
+# coordinates are 36.17, -115.14
+
+remove_first_two <- function(x) {
+  x[-(1:2)]
+}
+
+lv_files <- list.files(path="data/Las_Vegas_Solar_Irradiation/raw", pattern="\\.csv$", full.names=TRUE)
+lv_files_no_path <- list.files(path="data/Las_Vegas_Solar_Irradiation/raw", pattern="\\.csv$", full.names=FALSE)
+lv_read <- lapply(lv_files, readLines)
+lv_read <- lapply(lv_read, remove_first_two)
+
+for(i in 1:length(lv_files)) {
+  fwrite(lv_read[i], file=(paste0("data/Las_Vegas_Solar_Irradiation/cleaned/",lv_files_no_path[i])), quote=FALSE)
+}
+
+
+lv_files_cleaned <- list.files(path="data/Las_Vegas_Solar_Irradiation/cleaned", pattern="\\.csv$", full.names=TRUE)
+lv_cleaned <- lapply(lv_files_cleaned, fread)
+
+lv_full <- lv_cleaned %>% reduce(full_join)
+
+head(lv_full)
+str(lv_full)
+
+lv_full$Date <- make_datetime(year=lv_full$Year, month=lv_full$Month, day=lv_full$Day, hour=lv_full$Hour, min=lv_full$Minute)
+lv_full %>% ggplot() + geom_line(aes(x=Date, y=Temperature), color="red") 
+
+```
