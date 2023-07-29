@@ -174,3 +174,120 @@ plotsVs
 
 summary(chicago_full)
 ```
+
+```{r}
+#names(chicago_full)
+chicago_full$Zenith_Bins <- cut(chicago_full$`Solar Zenith Angle`, breaks = seq(0, 180, by = 10))
+
+# Plotting irradiance vs zenith angle
+# The gray dots are outliers of solar irradiance, likely caused by clouds
+ggplot(data = chicago_full, aes(x = Zenith_Bins, y = GHI)) +
+  geom_boxplot(outlier.color = "gray", size = 0.5) +
+  labs(x = "Solar Zenith Angle (degrees)", y = "Global Horizontal Irradiance (W/m²)",
+       title = "Distribution of GHI for Different Solar Zenith Angle (Grouped by bins of 10 degrees)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# plotting solar zenith against time of day
+ggplot(data = chicago_full, aes(x = Hour, y = `Solar Zenith Angle`, group = interaction(Month, Day), color = factor(Month))) +
+  geom_line() +
+  labs(x = "Time of Day (Hour)", y = "Solar Zenith Angle (degrees)",
+       title = "Solar Zenith Angle by Time of Day (Spaghetti Plot)") +
+  scale_color_discrete(name = "Month", labels = c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")) +
+  theme_minimal() +
+  theme(legend.position = "top", axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# shows the difference between solstices, and their effect on solar zenith angle
+filtered_data <- chicago_full %>%
+  filter(Month %in% c(6, 12))
+ggplot(data = filtered_data, aes(x = Hour, y = `Solar Zenith Angle`, group = interaction(Month, Day), color = factor(Month))) +
+  geom_line() +
+  labs(x = "Time of Day (Hour)", y = "Solar Zenith Angle (degrees)",
+       title = "Solar Zenith Angle by Time of Day (June and December Only)") +
+  scale_color_discrete(name = "Month", labels = c("June", "December")) +
+  theme_minimal() +
+  theme(legend.position = "top", axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+#plotting how solar irradiance is affected by time of month
+chicago_full$Month <- factor(chicago_full$Month, levels = 1:12, labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))
+agg_data <- chicago_full %>%
+  group_by(Month, Hour) %>%
+  summarize(Avg_GHI = mean(GHI))
+ggplot(data = chicago_full, aes(x = Hour, y = GHI, group = interaction(Month, Hour), color = Month)) +
+  geom_line(size = 1.5, alpha = 0.7) +  # Set the size to 1.5 (adjust as needed)
+  labs(x = "Hour of the Day", y = "Average Global Horizontal Irradiance (W/m²)",
+       title = "Average Solar Irradiance by Hour for Each Month (Spaghetti Plot)") +
+  scale_x_continuous(breaks = seq(0, 23, by = 1)) +
+  theme_minimal() +
+  theme(legend.position = "top", axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# num_unique_clouds <- chicago_full %>%
+#   distinct(Cloud_Type) %>%
+#   nrow()
+chicago_full <- chicago_full %>%
+  rename(Cloud_Type = `Cloud Type`)
+chicago_full$Cloud_Type <- factor (chicago_full$Cloud_Type)
+# Effect of clouds on GHI
+ggplot(data = chicago_full, aes(x = Cloud_Type, y = GHI)) +
+  stat_summary(data = subset(chicago_full, `Solar Zenith Angle` >= 0 & `Solar Zenith Angle` <= 80),
+               fun = "mean", geom = "bar", fill = "skyblue", color = "black") +
+  labs(x = "Cloud_Type", y = "Mean Global Horizontal Irradiance (W/m²)",
+       title = "Effect of Cloud Type on Irradiance (Solar Zenith: 0-80 degrees)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+names(chicago_full)
+
+# temperature vs irradiance boxplot
+ggplot(data = subset(chicago_full, `Solar Zenith Angle` >= 0 & `Solar Zenith Angle` <= 80),
+       aes(x = cut(Temperature, breaks = seq(min(Temperature), max(Temperature) + 2, by = 2)), y = GHI)) +
+  geom_boxplot() +
+  labs(x = "Temperature (°C)", y = "Global Horizontal Irradiance (W/m²)",
+       title = "Temperature vs. Global Horizontal Irradiance (Solar Zenith: 0-80 degrees)") +
+  theme_minimal()
+
+
+#Surface Albedo vs Irradiance for sunlight hours
+filtered_data <- chicago_full %>%
+  filter(`Solar Zenith Angle` >= 0 & `Solar Zenith Angle` <= 80,
+         `Surface Albedo` >= 0.05 & `Surface Albedo` <= 0.30)
+filtered_data <- filtered_data %>%
+  mutate(Albedo_Bin = cut(`Surface Albedo`, breaks = seq(0.05, 0.300, by = 0.002)),)
+ggplot(data = filtered_data, aes(x = Albedo_Bin, y = GHI)) +
+  geom_boxplot(outlier.color = "gray", size = 0.5) +
+  labs(x = "Surface Albedo", y = "Global Horizontal Irradiance (W/m²)",
+       title = "Distribution of GHI for Different Surface Albedo (Grouped by bins of 0.002)\n(Zenith: 0-80 degrees)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Relative humidity vs Solar Irradiance for zentih 0-80
+filtered_data <- filtered_data %>%
+  mutate(RelHumidity_Bin = cut(`Relative Humidity`, breaks = seq(0, 100, by = 2.5)))
+ggplot(data = filtered_data, aes(x = RelHumidity_Bin, y = GHI)) +
+  geom_boxplot(fill = "skyblue", color = "black") +
+  labs(x = "Relative Humidity (%)", y = "Global Horizontal Irradiance (W/m²)",
+       title = "GHI vs. Relative Humidity (Zenith: 0-80 degrees, Bin Size: 2.5%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Precipitable Water vs GHI (for hours during sunlight)
+filtered_data <- filtered_data %>%
+  mutate(PrecipitableWater_Bin = cut(`Precipitable Water`, breaks = seq(min(`Precipitable Water`), max(`Precipitable Water`), by = 0.15)))
+ggplot(data = filtered_data, aes(x = PrecipitableWater_Bin, y = GHI)) +
+  geom_boxplot(fill = "skyblue", color = "black") +
+  labs(x = "Precipitable Water (Bin Size: 0.05)", y = "Global Horizontal Irradiance (W/m²)",
+       title = "GHI vs. Precipitable Water (Zenith: 0-80 degrees)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
