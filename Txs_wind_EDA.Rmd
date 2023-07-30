@@ -27,6 +27,33 @@ pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.
 
 
 ```{r}
+og_df <- read.csv("data/TexasTurbine.csv")
+teor_df <- read.csv("data/form_output_txs.csv")
+names(og_df)
+names(teor_df)
+og_df <- og_df %>%
+  rename(
+    time_stamp = Time.stamp,
+    power_generated = System.power.generated....kW.,
+    wind_speed = Wind.speed....m.s.,
+    wind_direction = Wind.direction....deg.,
+    pressure = Pressure....atm.,
+    air_temperature = Air.temperature.....C.
+  )
+
+teor_df <- teor_df %>%
+  rename(
+    power_curve_turbine_output = Power.curve.turbine.output.array....kW.,
+    power_curve_wind_speed = Power.curve.wind.speed.array....m.s.
+  )
+
+Cp <- 0.35  # Efficiency factor (in decimal)
+r <- 1.225  # Air density at standard conditions (in kg/m^3)
+R <- 111/2    # Blade length of the wind turbine (in meters)
+sc <- 0.0001  # Scaling variable
+
+
+
 
 
 
