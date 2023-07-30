@@ -235,7 +235,7 @@ ggplot(data = chicago_full, aes(x = Cloud_Type, y = GHI)) +
   stat_summary(data = subset(chicago_full, `Solar Zenith Angle` >= 0 & `Solar Zenith Angle` <= 80),
                fun = "mean", geom = "bar", fill = "skyblue", color = "black") +
   labs(x = "Cloud_Type", y = "Mean Global Horizontal Irradiance (W/m²)",
-       title = "Effect of Cloud Type on Irradiance (Solar Zenith: 0-80 degrees)") +
+       title = "Effect of Cloud Type on Irradiance \n (Solar Zenith: 0-80 degrees)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
