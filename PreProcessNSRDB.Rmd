@@ -72,4 +72,11 @@ chicago_full <- chicago_cleaned %>% reduce(full_join)
 
 fwrite(chicago_full, file="data/Chicago_Solar_Irradiation/chicago.csv")
 
+chicago_full <- chicago_full$Location = 'Chicago'
+ny_full <- ny_full$Location = 'New York'
+lv_full <- lv_full$Location = 'Las Vegas'
+
+data = list(lv_full, ny_full, chicago_full)
+all_data <- data %>% reduce(full_join)
+fwrite(all_data, file="data/SolarFull.csv")
 ```

@@ -1,0 +1,81 @@
+---
+title: "SolarModeling"
+output: html_document
+date: "2023-07-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet)
+```
+
+```{r}
+solarData <- fread("data/SolarFull.csv")
+solarData$`Cloud Type` <- as.factor(solarData$`Cloud Type`)
+```
+
+```{r}
+
+solarData <- (solarData[which(solarData$`Solar Zenith Angle` >= 90)])
+
+N <- length(solarData$GHI) 
+n1 <- floor(.8*N)
+set.seed(10)
+# Split data to three portions of .6, .2 and .2 of data size N
+idx_train <- sample(N, n1)
+idx_no_train <- (which(! seq(1:N) %in% idx_train))
+data.train <- solarData[idx_train,]
+data.test <- solarData[idx_no_train,]
+
+fit <- lm(GHI ~ ., data.train)
+summary(fit)
+
+fitNoLoc <- lm(GHI ~ .-Location, data.train)
+summary(fitNoLoc)
+
+data.test$Prediction.noLoc <- predict(fitNoLoc, data.test, type="response")
+data.test <- data.test %>% mutate(sq.resid.noLoc = (Prediction.noLoc - GHI) * (Prediction.noLoc - GHI))
+MSE.noLoc <- mean(data.test$sq.resid.noLoc)
+MSE.noLoc
+
+
+data.test$Prediction.withLoc <- predict(fit, data.test, type="response")
+data.test <- data.test %>% mutate(sq.resid.loc = (Prediction.withLoc - GHI) * (Prediction.withLoc - GHI))
+MSE.Loc <- mean(data.test$sq.resid.loc)
+MSE.Loc
+
+
+# with backwards elimination
+summary(fitNoLoc)
+fitNoLoc <- update(fitNoLoc, .~.-`Wind Direction`)
+fitNoLoc <- update(fitNoLoc, .~.-`Temperature`)
+fitNoLoc <- update(fitNoLoc, .~.-`Hour`)
+fitNoLoc <- update(fitNoLoc, .~.-`Day`)
+fitNoLoc <- update(fitNoLoc, .~.-`Dew Point`)
+Anova(fitNoLoc)
+
+data.test$Prediction.noLoc.backwards <- predict(fitNoLoc, data.test, type="response")
+data.test <- data.test %>% mutate(sq.resid.noLoc.backwards = (Prediction.noLoc.backwards - GHI) * (Prediction.noLoc.backwards - GHI))
+MSE.noLoc.backwards <- mean(data.test$sq.resid.noLoc.backwards)
+MSE.noLoc.backwards
+
+plot(fitNoLoc)
+
+```
+
+```{r, trying LASSO instead}
+#Step 1: Prepare design matrix
+Y <- solarData$GHI # extract Y
+X.fl <- model.matrix(GHI~., data=solarData)[, -1] # take the first column's of 1 out #Step 2: Find x's output from LASSO with min cross-validation error
+set.seed(10) # to control the ramdomness in K folds
+fit.fl.cv <- cv.glmnet(X.fl, Y, alpha=0.01, nfolds=10, intercept = T)
+
+plot(fit.fl.cv)
+
+coef.min <- coef(fit.fl.cv, s=exp(-6)) #s=c("lambda.1se","lambda.min") or lambda value
+coef.min.nonzero <- coef.min[which(coef.min !=0),] # get the non=zero coefficients
+var.min <- rownames(as.matrix(coef.min))[-1] # output the names dim(as.matrix(coef.min))
+```
