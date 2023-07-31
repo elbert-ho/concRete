@@ -14,8 +14,6 @@ pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.
 
 
 ```{r}
-# coordinates are 36.17, -115.14
-
 ny_full <- fread("data/NY_Solar_Irradiation/ny.csv")
 
 head(ny_full)
@@ -34,7 +32,7 @@ temp <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = Temperature, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Temperature by Month", colour = "Year")
+  labs(title = "Average Temperature by Month", x="Month", y="Temp (°C)", colour = "Year")
 
 dew <- ny_full %>% 
   # average by year-month
@@ -43,7 +41,7 @@ dew <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Dew Point`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Dew Point by Month", colour = "Year")
+  labs(title = "Average Dew Point by Month", x="Month", y="Dew Point (°C)", colour = "Year")
 
 humidity <- ny_full %>% 
   # average by year-month
@@ -52,7 +50,7 @@ humidity <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Relative Humidity`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Relative Humidity by Month", colour = "Year")
+  labs(title = "Average Relative Humidity by Month", x = "Month", y = "Relative Humidity (%)", colour = "Year")
 
 albedo <- ny_full %>% 
   # average by year-month
@@ -61,7 +59,7 @@ albedo <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Surface Albedo`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Surface Albedo by Month", colour = "Year")
+  labs(title = "Average Surface Albedo by Month", x = "Month", y = "Surface Albedo (%)", colour = "Year")
 
 wind <- ny_full %>% 
   # average by year-month
@@ -70,7 +68,7 @@ wind <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Wind Speed`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Wind Speed by Month", colour = "Year")
+  labs(title = "Average Wind Speed by Month", y="Wind Speed (m/s)", colour = "Year")
 
 pressure <- ny_full %>% 
   # average by year-month
@@ -79,7 +77,7 @@ pressure <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Pressure`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Pressure by Month", colour = "Year")
+  labs(title = "Average Pressure by Month", y="Pressure (mbar)", colour = "Year")
 
 windD <- ny_full %>% 
   # average by year-month
@@ -88,7 +86,7 @@ windD <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Wind Direction`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Wind Direction by Month", colour = "Year")
+  labs(title = "Average Wind Direction by Month", y="Wind Direction (°)", colour = "Year")
 
 precip <- ny_full %>% 
   # average by year-month
@@ -97,9 +95,9 @@ precip <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `Precipitable Water`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average Precipitable Water by Month", colour = "Year")
+  labs(title = "Average Precipitable Water by Month", y = "Precipitable Water (cm)", colour = "Year")
 
-zenith <- ny_full %>% ggplot(aes(x=`Solar Zenith Angle`)) + geom_histogram(bins=360) + scale_x_continuous(breaks=seq(0,360,30)) + labs(title="Solar Zenith Angle Histogram")
+zenith <- ny_full %>% ggplot(aes(x=`Solar Zenith Angle`)) + geom_histogram(bins=360) + scale_x_continuous(breaks=seq(0,360,30)) + labs(title="Solar Zenith Angle Histogram", x = "Degrees", y = "Count")
 
 ghi <- ny_full %>% 
   # average by year-month
@@ -108,64 +106,59 @@ ghi <- ny_full %>%
   ggplot() +
   geom_line(aes(x = Month, y = `GHI`, color = factor(Year))) +
   scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-  labs(title = "Average GHI by Month", colour = "Year")
+  labs(title = "Average GHI by Month", colour = "Year", y = "Avg GHI (w/m^2)")
 
 cloud <- ny_full %>% ggplot(aes(x=`Cloud Type`)) + geom_histogram(bins=11) + scale_x_continuous(breaks=seq(0,10,1))+ labs(title="Cloud Type")
 
 vsTemp <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Temperature` = mean(`Temperature`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Temperature`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Temperature`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Temperature")
 
 vsDew <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Dew Point` = mean(`Dew Point`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Dew Point`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Dew Point`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Dew Point")
 
 vsHumid <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Relative Humidity` = mean(`Relative Humidity`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Relative Humidity`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Relative Humidity`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Humidity")
 
 vsAlbedo <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Surface Albedo` = mean(`Surface Albedo`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Surface Albedo`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Surface Albedo`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Surface Albedo")
 
 vsWindS <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Wind Speed` = mean(`Wind Speed`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Wind Speed`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Wind Speed`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Wind Speed")
 
 vsPressure <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Pressure` = mean(`Pressure`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Pressure`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Pressure`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Pressure")
 
 vsWindD <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Wind Direction` = mean(`Wind Direction`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Wind Direction`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Wind Direction`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Wind Direction")
 
 vsPrecip <- ny_full %>% 
   group_by(Year, Month) %>% 
   summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Precipitable Water` = mean(`Precipitable Water`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Precipitable Water`, y=GHI)) + geom_point()
-
-vsWindD <- ny_full %>% 
-  group_by(Year, Month) %>% 
-  summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Wind Direction` = mean(`Wind Direction`, na.rm=TRUE)) %>% 
-  ggplot(aes(x=`Wind Direction`, y=GHI)) + geom_point()
+  ggplot(aes(x=`Precipitable Water`, y=GHI)) + geom_point() + labs(title="Average GHI by Month vs. Precipitable Water")
 
 vsZenith <- ny_full %>%
   group_by(`Solar Zenith Angle`) %>%
   summarise(average_ghi = mean(GHI, na.rm=TRUE)) %>%
-  ggplot(aes(x=`Solar Zenith Angle`, y=average_ghi)) + geom_point()
+  ggplot(aes(x=`Solar Zenith Angle`, y=average_ghi)) + geom_point() + labs(title="Average GHI by Month vs. Precipitable Water")
 
 vsCloud <- ny_full %>%
   group_by(`Cloud Type`) %>%
   summarise(average_ghi = mean(GHI, na.rm=TRUE)) %>%
-  ggplot(aes(x=`Cloud Type`, y=average_ghi)) + geom_point()
+  ggplot(aes(x=`Cloud Type`, y=average_ghi)) + geom_point() + labs(title="Average GHI by Month vs. Cloud Type")
 
 plots <- list(temp, dew, humidity, albedo, wind, pressure, windD, precip, zenith, ghi, cloud)
 plots
