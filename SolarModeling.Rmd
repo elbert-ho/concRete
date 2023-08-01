@@ -179,3 +179,13 @@ save_model_hdf5(model, model_path)
 metrics <- model %>% evaluate(x_test, y_test)
 metrics
 ```
+
+
+```{r}
+
+model_loaded <- load_model_hdf5(model_path)
+metrics <- model_loaded %>% evaluate(x_test, y_test)
+metrics
+```
+
+
