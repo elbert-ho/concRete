@@ -1,0 +1,48 @@
+---
+title: "SolarModeling"
+output: html_document
+date: "2023-07-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, keras, caret, randomForest)
+```
+
+
+```{r}
+solarData_ML <- fread("data/SolarFull.csv")
+solarData_ML$`Cloud Type` <- as.factor(solarData_ML$`Cloud Type`)
+solarData_ML <- solarData_ML[solarData_ML$`Solar Zenith Angle` < 90]
+vars_to_drop <- c("Year", "Month", "Day", "Hour", "Minute", "Location", "Cloud Type")
+solarData_ML_filtered <- solarData_ML %>% select(-one_of(vars_to_drop))
+solarData_ML_filtered <- na.omit(solarData_ML_filtered)
+solarData_ML_filtered <- as.data.frame(solarData_ML_filtered)
+target_var <- "GHI"
+predictors <- setdiff(names(solarData_ML_filtered), target_var)
+
+train_idx <- createDataPartition(solarData_ML_filtered$GHI, p = 0.8, list = FALSE)
+train_data <- solarData_ML_filtered[train_idx, ]
+test_data <- solarData_ML_filtered[-train_idx, ]
+
+num_trees <- 500
+rf_model <- randomForest(GHI ~ ., data = train_data, ntree = num_trees)
+
+predictions <- predict(rf_model, newdata = test_data[, predictors])
+mae <- mae(test_data$GHI, predictions)
+print(paste("Mean Absolute Error:", mae))
+
+```
+
+
+
+```{r}
+
+
+
+
+
+```
