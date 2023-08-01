@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, e1071, caret)
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, e1071, caret, keras)
 ```
 
 ```{r}
