@@ -140,7 +140,7 @@ solarData_ML_filtered <- solarData_ML %>% select(-one_of(vars_to_drop))
 solarData_ML_filtered <- na.omit(solarData_ML_filtered)
 scaled_data <- as.data.frame(scale(solarData_ML_filtered))
 
-set.seed(123)
+set.seed(69)
 index <- createDataPartition(scaled_data$GHI, p = 0.8, list = FALSE)
 train_data <- scaled_data[index, ]
 test_data <- scaled_data[-index, ]
@@ -154,7 +154,7 @@ y_test <- as.vector(test_data$GHI)
 # Create the Keras model
 model <- keras_model_sequential() %>%
   layer_dense(units = 64, activation = "relu", input_shape = ncol(x_train)) %>%
-  layer_dense(units = 32, activation = "tanh") %>%
+  layer_dense(units = 32, activation = "relu") %>%
   layer_dense(units = 1)  # Output layer with 1 neuron for GHI prediction
 
 # Compile the model
@@ -167,7 +167,7 @@ model %>% compile(
 # Train the model
 history <- model %>% fit(
   x_train, y_train,
-  epochs = 50,
+  epochs = 8,
   batch_size = 32,
   validation_split = 0.2
 )
