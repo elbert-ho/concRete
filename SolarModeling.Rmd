@@ -172,6 +172,9 @@ history <- model %>% fit(
   validation_split = 0.2
 )
 
+model_path <- "ML_models/solar_irr_general.h5"
+save_model_hdf5(model, model_path)
+
 # Evaluate the model on the test data
 metrics <- model %>% evaluate(x_test, y_test)
 metrics

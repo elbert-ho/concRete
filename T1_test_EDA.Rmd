@@ -141,6 +141,7 @@ history <- model %>% fit(
   validation_split = 0.1,
   verbose = 1
 )
+
 evaluation <- model %>% evaluate(X_test, y_test)
 evaluation
 ```
