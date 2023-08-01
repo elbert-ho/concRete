@@ -153,8 +153,8 @@ y_test <- as.vector(test_data$GHI)
 
 # Create the Keras model
 model <- keras_model_sequential() %>%
-  layer_dense(units = 64, activation = "tanh", input_shape = ncol(x_train)) %>%
-  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(x_train)) %>%
+  layer_dense(units = 32, activation = "tanh") %>%
   layer_dense(units = 1)  # Output layer with 1 neuron for GHI prediction
 
 # Compile the model
