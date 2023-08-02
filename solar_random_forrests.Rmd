@@ -38,10 +38,24 @@ data.processed$GHI <- GHI_column
 ```{r}
 set.seed(69)
 
-split_index <- sample(1:nrow(data.processed), size = 50000)
-test_index <-sample(1:nrow(data.processed), size = 10000)
-train_data <- data.processed[split_index, ]
-test_data <- data.processed[test_index, ]
+# split_index <- sample(1:nrow(data.processed), size = 50000)
+# test_index <-sample(1:nrow(data.processed), size = 10000)
+# train_data <- data.processed[split_index, ]
+# test_data <- data.processed[test_index, ]
+
+N <- length(data.processed$GHI) 
+# n1 <- floor(.8*N)
+n1 <- 50000
+n2 <- 10000
+set.seed(10)
+idx_train <- sample(N, n1)
+idx_no_train <- (which(! seq(1:N) %in% idx_train))
+idx_test <- sample(idx_no_train, n2)
+idx_val <- (which(! idx_no_train %in% idx_test))
+train_data <- data.processed[idx_train,]
+test_data <- data.processed[idx_test,]
+val_data <- data.processed[idx_val,]
+
 rf_model <- randomForest(GHI ~., data = train_data, ntree = 512)
 saveRDS(rf_model, file = "ML_models/rf_model.rds")
 
