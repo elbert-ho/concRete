@@ -9,40 +9,40 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 0, digits = 3)  # controls base R output
 # check if you have ISLR package, if not, install it
 if(!require('pacman')) {install.packages('pacman')}
-pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, keras, caret, randomForest)
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, keras, caret, randomForest, Metrics, caTools)
 ```
 
 
 ```{r}
-solarData_ML <- fread("data/SolarFull.csv")
-solarData_ML$`Cloud Type` <- as.factor(solarData_ML$`Cloud Type`)
-solarData_ML <- solarData_ML[solarData_ML$`Solar Zenith Angle` < 90]
-vars_to_drop <- c("Year", "Month", "Day", "Hour", "Minute", "Location", "Cloud Type")
-solarData_ML_filtered <- solarData_ML %>% select(-one_of(vars_to_drop))
-solarData_ML_filtered <- na.omit(solarData_ML_filtered)
-solarData_ML_filtered <- as.data.frame(solarData_ML_filtered)
-target_var <- "GHI"
-predictors <- setdiff(names(solarData_ML_filtered), target_var)
 
-train_idx <- createDataPartition(solarData_ML_filtered$GHI, p = 0.8, list = FALSE)
-train_data <- solarData_ML_filtered[train_idx, ]
-test_data <- solarData_ML_filtered[-train_idx, ]
+solarData <- fread("data/SolarFull.csv")
+solarData$`Cloud Type` <- as.factor(solarData$`Cloud Type`)
 
-num_trees <- 500
-rf_model <- randomForest(GHI ~ ., data = train_data, ntree = num_trees)
+data.processed <- solarData %>% select(-Location)
+# then we do a one hot encoding on the cloud type
+dummy <- dummyVars(" ~.", data=data.processed)
+data.processed <- data.frame(predict(dummy, data.processed))
 
-predictions <- predict(rf_model, newdata = test_data[, predictors])
-mae <- mae(test_data$GHI, predictions)
-print(paste("Mean Absolute Error:", mae))
+# cyclical encoding on month, day, hour, minute, and wind direction
+data.processed <- data.processed %>% mutate(sinWD= sin(X.Wind.Direction. * pi / 180), cosWD = cos(X.Wind.Direction. * pi / 180)) %>% select(-X.Wind.Direction.)
 
+data.processed <- data.processed %>% mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), sin.minute = sin(2 * pi * Minute / 60), cos.minute = cos(2 * pi * Minute / 60)) %>% select(-c(Month, Day, Hour, Minute))
+
+# min max standardization
+processed <- preProcess(data.processed, method=c("range"))
+data.processed <- predict(processed, data.processed)
 ```
 
-
-
 ```{r}
+set.seed(42)
+
+split_index <- sample(1:nrow(data.processed), size = 20000)
+train_data <- data.processed[split_index, ]
+test_data <- data.processed[-split_index, ]
+rf_model <- randomForest(GHI ~., data = train_data, ntree = 100)
 
 
-
-
-
+saveRDS(rf_model, file = "models/random_forest_model.rds")
+predictions <- predict(rf_model, newdata = test_data)
+mse <- mean((test_data$GHI - predictions)^2)
 ```
