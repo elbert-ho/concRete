@@ -373,82 +373,109 @@ Santa Fe.</p>
 </div>
 <div id="setup" class="section level2">
 <h2>Setup</h2>
-<pre class="r"><code>knitr::opts_chunk$set(eval = FALSE, echo=TRUE)
-
-if(!require(&#39;pacman&#39;)) {install.packages(&#39;pacman&#39;)}</code></pre>
+<pre class="r"><code>knitr::opts_chunk$set(eval = FALSE, echo = TRUE)
+if (!require(&quot;pacman&quot;)) {
+    install.packages(&quot;pacman&quot;)
+}</code></pre>
 <pre><code>## Loading required package: pacman</code></pre>
-<pre class="r"><code>pacman::p_load(dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, e1071, caret, xgboost, keras, randomForest, sf, Ckmeans.1d.dp, DiagrammeR, DiagrammeRsvg, rsvg)</code></pre>
+<pre class="r"><code>pacman::p_load(dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, 
+               patchwork, car, glmnet, e1071, caret, xgboost, keras, 
+               randomForest, sf, Ckmeans.1d.dp, DiagrammeR, DiagrammeRsvg, rsvg)</code></pre>
 </div>
 <div id="cleaning" class="section level2">
 <h2>Cleaning</h2>
 <pre class="r"><code># This function removes the first two rows of a given dataframe
 remove_first_two &lt;- function(x) {
-  x[-(1:2)]
+    x[-(1:2)]
+}
+
+# will be used later on
+first_two &lt;- function(x) {
+    x[(1:2)]
 }
 
 # read in the raw files
-lv_files &lt;- list.files(path=&quot;data/Las_Vegas_Solar_Irradiation/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
-lv_files_no_path &lt;- list.files(path=&quot;data/Las_Vegas_Solar_Irradiation/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=FALSE)
+lv_files &lt;- list.files(path = &quot;data/Las_Vegas_Solar_Irradiation/raw&quot;, 
+                       pattern = &quot;\\.csv$&quot;, full.names = TRUE)
+lv_files_no_path &lt;- list.files(path = &quot;data/Las_Vegas_Solar_Irradiation/raw&quot;, 
+                               pattern = &quot;\\.csv$&quot;, full.names = FALSE)
 lv_read &lt;- lapply(lv_files, readLines)
 
 # remove the info lines
 lv_read &lt;- lapply(lv_read, remove_first_two)
 
 # rewrite to a new file
-for(i in 1:length(lv_files)) {
-  fwrite(lv_read[i], file=(paste0(&quot;data/Las_Vegas_Solar_Irradiation/cleaned/&quot;,lv_files_no_path[i])), quote=FALSE)
+for (i in 1:length(lv_files)) {
+    fwrite(lv_read[i], 
+           file = (paste0(&quot;data/Las_Vegas_Solar_Irradiation/cleaned/&quot;, 
+                          lv_files_no_path[i])), quote = FALSE)
 }
 
 # join all Las Vegas data into one dataframe
-lv_files_cleaned &lt;- list.files(path=&quot;data/Las_Vegas_Solar_Irradiation/cleaned&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
+lv_files_cleaned &lt;- list.files(path = &quot;data/Las_Vegas_Solar_Irradiation/cleaned&quot;, 
+                               pattern = &quot;\\.csv$&quot;, full.names = TRUE)
 lv_cleaned &lt;- lapply(lv_files_cleaned, fread)
-lv_full &lt;- lv_cleaned %&gt;% reduce(full_join)
-fwrite(lv_full, file=&quot;data/Las_Vegas_Solar_Irradiation/LV.csv&quot;)
+lv_full &lt;- lv_cleaned %&gt;%
+    reduce(full_join)
+fwrite(lv_full, file = &quot;data/Las_Vegas_Solar_Irradiation/LV.csv&quot;)
 
 # same process for New York and Chicago
-ny_files &lt;- list.files(path=&quot;data/NY_Solar_Irradiation/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
-ny_files_no_path &lt;- list.files(path=&quot;data/NY_Solar_Irradiation/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=FALSE)
+ny_files &lt;- list.files(path = &quot;data/NY_Solar_Irradiation/raw&quot;, 
+                       pattern = &quot;\\.csv$&quot;, full.names = TRUE)
+ny_files_no_path &lt;- list.files(path = &quot;data/NY_Solar_Irradiation/raw&quot;, 
+                               pattern = &quot;\\.csv$&quot;, full.names = FALSE)
 ny_read &lt;- lapply(ny_files, readLines)
 
 ny_read &lt;- lapply(ny_read, remove_first_two)
 
-for(i in 1:length(ny_files)) {
-  fwrite(ny_read[i], file=(paste0(&quot;data/NY_Solar_Irradiation/cleaned/&quot;,ny_files_no_path[i])), quote=FALSE)
+for (i in 1:length(ny_files)) {
+    fwrite(ny_read[i], 
+           file = (paste0(&quot;data/NY_Solar_Irradiation/cleaned/&quot;, 
+                          ny_files_no_path[i])), quote = FALSE)
 }
 
-ny_files_cleaned &lt;- list.files(path=&quot;data/NY_Solar_Irradiation/cleaned&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
+ny_files_cleaned &lt;- list.files(path = &quot;data/NY_Solar_Irradiation/cleaned&quot;, 
+                               pattern = &quot;\\.csv$&quot;, full.names = TRUE)
 ny_cleaned &lt;- lapply(ny_files_cleaned, fread)
 
-ny_full &lt;- ny_cleaned %&gt;% reduce(full_join)
+ny_full &lt;- ny_cleaned %&gt;%
+    reduce(full_join)
 
-fwrite(ny_full, file=&quot;data/NY_Solar_Irradiation/ny.csv&quot;)
+fwrite(ny_full, file = &quot;data/NY_Solar_Irradiation/ny.csv&quot;)
 
-chicago_files &lt;- list.files(path=&quot;data/Chicago_Solar_Irradiation/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
-chicago_files_no_path &lt;- list.files(path=&quot;data/Chicago_Solar_Irradiation/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=FALSE)
+chicago_files &lt;- list.files(path = &quot;data/Chicago_Solar_Irradiation/raw&quot;, 
+                            pattern = &quot;\\.csv$&quot;, full.names = TRUE)
+chicago_files_no_path &lt;- list.files(path = &quot;data/Chicago_Solar_Irradiation/raw&quot;, 
+                                    pattern = &quot;\\.csv$&quot;, full.names = FALSE)
 chicago_read &lt;- lapply(chicago_files, readLines)
 chicago_read &lt;- lapply(chicago_read, remove_first_two)
 
-for(i in 1:length(chicago_files)) {
-  fwrite(chicago_read[i], file=(paste0(&quot;data/Chicago_Solar_Irradiation/cleaned/&quot;,chicago_files_no_path[i])), quote=FALSE)
+for (i in 1:length(chicago_files)) {
+    fwrite(chicago_read[i], 
+           file = (paste0(&quot;data/Chicago_Solar_Irradiation/cleaned/&quot;, 
+                          chicago_files_no_path[i])), quote = FALSE)
 }
 
 
-chicago_files_cleaned &lt;- list.files(path=&quot;data/Chicago_Solar_Irradiation/cleaned&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
+chicago_files_cleaned &lt;- list.files(path = &quot;data/Chicago_Solar_Irradiation/cleaned&quot;, 
+                                    pattern = &quot;\\.csv$&quot;, full.names = TRUE)
 chicago_cleaned &lt;- lapply(chicago_files_cleaned, fread)
 
-chicago_full &lt;- chicago_cleaned %&gt;% reduce(full_join)
+chicago_full &lt;- chicago_cleaned %&gt;%
+    reduce(full_join)
 
-fwrite(chicago_full, file=&quot;data/Chicago_Solar_Irradiation/chicago.csv&quot;)
+fwrite(chicago_full, file = &quot;data/Chicago_Solar_Irradiation/chicago.csv&quot;)
 
-chicago_full &lt;- chicago_full$Location = &#39;Chicago&#39;
-ny_full &lt;- ny_full$Location = &#39;New York&#39;
-lv_full &lt;- lv_full$Location = &#39;Las Vegas&#39;
+chicago_full &lt;- chicago_full$Location = &quot;Chicago&quot;
+ny_full &lt;- ny_full$Location = &quot;New York&quot;
+lv_full &lt;- lv_full$Location = &quot;Las Vegas&quot;
 
 
 # put all data together into one large dataframe
 data = list(lv_full, ny_full, chicago_full)
-all_data &lt;- data %&gt;% reduce(full_join)
-fwrite(all_data, file=&quot;data/SolarFull.csv&quot;)</code></pre>
+all_data &lt;- data %&gt;%
+    reduce(full_join)
+fwrite(all_data, file = &quot;data/SolarFull.csv&quot;)</code></pre>
 </div>
 <div id="eda-on-cleaned-data" class="section level2">
 <h2>EDA on Cleaned Data</h2>
@@ -467,8 +494,13 @@ for(i in (1:3)) {
   head(city_data[[i]])
   str(city_data[[i]])
   
-  city_data[[i]]$Date &lt;- make_datetime(year=city_data[[i]]$Year, month=city_data[[i]]$Month, day=city_data[[i]]$Day, hour=city_data[[i]]$Hour, min=city_data[[i]]$Minute)
-  city_data[[i]] %&gt;% ggplot(aes(x=Date, y=Temperature)) + geom_line(color=&quot;blue&quot;) 
+  city_data[[i]]$Date &lt;- make_datetime(year = city_data[[i]]$Year, 
+                                       month = city_data[[i]]$Month, 
+                                       day = city_data[[i]]$Day, 
+                                       hour = city_data[[i]]$Hour, 
+                                       min = city_data[[i]]$Minute)
+  city_data[[i]] %&gt;%
+    ggplot(aes(x = Date, y = Temperature)) + geom_line(color = &quot;blue&quot;)
   
   plots &lt;- NULL
   
@@ -476,11 +508,11 @@ for(i in (1:3)) {
   temp &lt;- city_data[[i]] %&gt;% 
     # average by year-month
     group_by(Year, Month) %&gt;% 
-    summarise(Temperature = mean(Temperature, na.rm = TRUE), .groups = &quot;drop&quot;) %&gt;% 
+    summarise(Temperature=mean(Temperature, na.rm = TRUE),.groups = &quot;drop&quot;) %&gt;% 
     ggplot() +
     geom_line(aes(x = Month, y = Temperature, color = factor(Year))) +
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-    labs(title = &quot;Average Temperature by Month&quot;, x=&quot;Month&quot;, y=&quot;Temp (°C)&quot;, colour = &quot;Year&quot;)
+    labs(title=&quot;Average Temperature by Month&quot;,x=&quot;Month&quot;,y=&quot;Temp (°C)&quot;,colour=&quot;Year&quot;)
   
   dew &lt;- city_data[[i]] %&gt;% 
     # average by year-month
@@ -489,25 +521,30 @@ for(i in (1:3)) {
     ggplot() +
     geom_line(aes(x = Month, y = `Dew Point`, color = factor(Year))) +
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-    labs(title = &quot;Average Dew Point by Month&quot;, x=&quot;Month&quot;, y=&quot;Dew Point (°C)&quot;, colour = &quot;Year&quot;)
+    labs(title = &quot;Average Dew Point by Month&quot;, 
+         x=&quot;Month&quot;, y=&quot;Dew Point (°C)&quot;, colour = &quot;Year&quot;)
   
   humidity &lt;- city_data[[i]] %&gt;% 
     # average by year-month
     group_by(Year, Month) %&gt;% 
-    summarise(`Relative Humidity` = mean(`Relative Humidity`, na.rm = TRUE), .groups = &quot;drop&quot;) %&gt;% 
+    summarise(`Relative Humidity` = mean(`Relative Humidity`, na.rm = TRUE), 
+              .groups = &quot;drop&quot;) %&gt;% 
     ggplot() +
     geom_line(aes(x = Month, y = `Relative Humidity`, color = factor(Year))) +
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-    labs(title = &quot;Average Relative Humidity by Month&quot;, x = &quot;Month&quot;, y = &quot;Relative Humidity (%)&quot;, colour = &quot;Year&quot;)
+    labs(title = &quot;Average Relative Humidity by Month&quot;, 
+         x = &quot;Month&quot;, y = &quot;Relative Humidity (%)&quot;, colour = &quot;Year&quot;)
   
   albedo &lt;- city_data[[i]] %&gt;% 
     # average by year-month
     group_by(Year, Month) %&gt;% 
-    summarise(`Surface Albedo` = mean(`Surface Albedo`, na.rm = TRUE), .groups = &quot;drop&quot;) %&gt;% 
+    summarise(`Surface Albedo` = mean(`Surface Albedo`, na.rm = TRUE), 
+              .groups = &quot;drop&quot;) %&gt;% 
     ggplot() +
     geom_line(aes(x = Month, y = `Surface Albedo`, color = factor(Year))) +
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-    labs(title = &quot;Average Surface Albedo by Month&quot;, x = &quot;Month&quot;, y = &quot;Surface Albedo (%)&quot;, colour = &quot;Year&quot;)
+    labs(title = &quot;Average Surface Albedo by Month&quot;, 
+         x = &quot;Month&quot;, y = &quot;Surface Albedo (%)&quot;, colour = &quot;Year&quot;)
   
   wind &lt;- city_data[[i]] %&gt;% 
     # average by year-month
@@ -530,22 +567,29 @@ for(i in (1:3)) {
   windD &lt;- city_data[[i]] %&gt;% 
     # average by year-month
     group_by(Year, Month) %&gt;% 
-    summarise(`Wind Direction` = mean(`Wind Direction`, na.rm = TRUE), .groups = &quot;drop&quot;) %&gt;% 
+    summarise(`Wind Direction` = mean(`Wind Direction`, na.rm = TRUE), 
+              .groups = &quot;drop&quot;) %&gt;% 
     ggplot() +
     geom_line(aes(x = Month, y = `Wind Direction`, color = factor(Year))) +
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-    labs(title = &quot;Average Wind Direction by Month&quot;, y=&quot;Wind Direction (°)&quot;, colour = &quot;Year&quot;)
+    labs(title = &quot;Average Wind Direction by Month&quot;, 
+         y=&quot;Wind Direction (°)&quot;, colour = &quot;Year&quot;)
   
   precip &lt;- city_data[[i]] %&gt;% 
     # average by year-month
     group_by(Year, Month) %&gt;% 
-    summarise(`Precipitable Water` = mean(`Precipitable Water`, na.rm = TRUE), .groups = &quot;drop&quot;) %&gt;% 
+    summarise(`Precipitable Water` = mean(`Precipitable Water`, na.rm = TRUE), 
+              .groups = &quot;drop&quot;) %&gt;% 
     ggplot() +
     geom_line(aes(x = Month, y = `Precipitable Water`, color = factor(Year))) +
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
-    labs(title = &quot;Average Precipitable Water by Month&quot;, y = &quot;Precipitable Water (cm)&quot;, colour = &quot;Year&quot;)
+    labs(title = &quot;Average Precipitable Water by Month&quot;, 
+         y = &quot;Precipitable Water (cm)&quot;, colour = &quot;Year&quot;)
   
-  zenith &lt;- city_data[[i]] %&gt;% ggplot(aes(x=`Solar Zenith Angle`)) + geom_histogram(bins=360) + scale_x_continuous(breaks=seq(0,360,30)) + labs(title=&quot;Solar Zenith Angle Histogram&quot;, x = &quot;Degrees&quot;, y = &quot;Count&quot;)
+  zenith &lt;- city_data[[i]] %&gt;% ggplot(aes(x=`Solar Zenith Angle`)) + 
+    geom_histogram(bins=360) + 
+    scale_x_continuous(breaks=seq(0,360,30)) + 
+    labs(title=&quot;Solar Zenith Angle Histogram&quot;, x = &quot;Degrees&quot;, y = &quot;Count&quot;)
   
   ghi &lt;- city_data[[i]] %&gt;% 
     # average by year-month
@@ -556,75 +600,102 @@ for(i in (1:3)) {
     scale_x_continuous(breaks = 1:12, labels = month.abb, minor_breaks = NULL) +
     labs(title = &quot;Average GHI by Month&quot;, colour = &quot;Year&quot;, y = &quot;Avg GHI (w/m^2)&quot;)
   
-  cloud &lt;- city_data[[i]] %&gt;% ggplot(aes(x=`Cloud Type`)) + geom_histogram(bins=11) + scale_x_continuous(breaks=seq(0,10,1))+ labs(title=&quot;Cloud Type&quot;)
+  cloud &lt;- city_data[[i]] %&gt;% ggplot(aes(x=`Cloud Type`)) + 
+    geom_histogram(bins=11) + scale_x_continuous(breaks=seq(0,10,1)) + 
+    labs(title=&quot;Cloud Type&quot;)
   
   vsTemp &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Temperature` = mean(`Temperature`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Temperature`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Temperature&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Temperature` = mean(`Temperature`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Temperature`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Temperature&quot;)
   
   vsDew &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Dew Point` = mean(`Dew Point`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Dew Point`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Dew Point&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Dew Point` = mean(`Dew Point`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Dew Point`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Dew Point&quot;)
   
   vsHumid &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Relative Humidity` = mean(`Relative Humidity`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Relative Humidity`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Humidity&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Relative Humidity` = mean(`Relative Humidity`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Relative Humidity`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Humidity&quot;)
   
   vsAlbedo &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Surface Albedo` = mean(`Surface Albedo`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Surface Albedo`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Surface Albedo&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Surface Albedo` = mean(`Surface Albedo`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Surface Albedo`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Surface Albedo&quot;)
   
   vsWindS &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Wind Speed` = mean(`Wind Speed`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Wind Speed`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Wind Speed&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Wind Speed` = mean(`Wind Speed`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Wind Speed`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Wind Speed&quot;)
   
   vsPressure &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Pressure` = mean(`Pressure`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Pressure`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Pressure&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Pressure` = mean(`Pressure`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Pressure`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Pressure&quot;)
   
   vsWindD &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Wind Direction` = mean(`Wind Direction`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Wind Direction`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Wind Direction&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Wind Direction` = mean(`Wind Direction`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Wind Direction`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Wind Direction&quot;)
   
   vsPrecip &lt;- city_data[[i]] %&gt;% 
     group_by(Year, Month) %&gt;% 
-    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), `Precipitable Water` = mean(`Precipitable Water`, na.rm=TRUE)) %&gt;% 
-    ggplot(aes(x=`Precipitable Water`, y=GHI)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Precipitable Water&quot;)
+    summarise(`GHI` = mean(`GHI`, na.rm=TRUE), 
+              `Precipitable Water` = mean(`Precipitable Water`, na.rm=TRUE)) %&gt;% 
+    ggplot(aes(x=`Precipitable Water`, y=GHI)) + geom_point() + 
+    labs(title=&quot;Average GHI by Month vs. Precipitable Water&quot;)
   
   vsZenith &lt;- city_data[[i]] %&gt;%
     group_by(`Solar Zenith Angle`) %&gt;%
     summarise(average_ghi = mean(GHI, na.rm=TRUE)) %&gt;%
-    ggplot(aes(x=`Solar Zenith Angle`, y=average_ghi)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Precipitable Water&quot;)
+    ggplot(aes(x=`Solar Zenith Angle`, y=average_ghi)) + 
+    geom_point() + labs(title=&quot;Average GHI by Month vs. Precipitable Water&quot;)
   
   vsCloud &lt;- city_data[[i]] %&gt;%
     group_by(`Cloud Type`) %&gt;%
     summarise(average_ghi = mean(GHI, na.rm=TRUE)) %&gt;%
-    ggplot(aes(x=`Cloud Type`, y=average_ghi)) + geom_point() + labs(title=&quot;Average GHI by Month vs. Cloud Type&quot;)
+    ggplot(aes(x=`Cloud Type`, y=average_ghi)) + 
+    geom_point() + labs(title=&quot;Average GHI by Month vs. Cloud Type&quot;)
 
-  city_data[[i]]$Zenith_Bins &lt;- cut(city_data[[i]]$`Solar Zenith Angle`, breaks = seq(0, 180, by = 10))
+  city_data[[i]]$Zenith_Bins &lt;- 
+    cut(city_data[[i]]$`Solar Zenith Angle`, breaks = seq(0, 180, by = 10))
   
   # Plotting irradiance vs zenith angle
   # The gray dots are outliers of solar irradiance, likely caused by clouds
   p1 &lt;- ggplot(data = city_data[[i]], aes(x = Zenith_Bins, y = GHI)) +
     geom_boxplot(outlier.color = &quot;gray&quot;, size = 0.5) +
-    labs(x = &quot;Solar Zenith Angle (degrees)&quot;, y = &quot;Global Horizontal Irradiance (W/m²)&quot;,
-         title = &quot;Distribution of GHI for Different Solar Zenith Angle (Grouped by bins of 10 degrees)&quot;) +
+    labs(x = &quot;Solar Zenith Angle (degrees)&quot;, 
+         y = &quot;Global Horizontal Irradiance (W/m²)&quot;,
+         title = &quot;Distribution of GHI for Different Solar Zenith Angle 
+         (Grouped by bins of10 degrees)&quot;) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
   
   # plotting solar zenith against time of day
-  p2 &lt;- ggplot(data = city_data[[i]], aes(x = Hour, y = `Solar Zenith Angle`, group = interaction(Month, Day), color = factor(Month))) +
-    geom_line() +
+  p2 &lt;- ggplot(data = city_data[[i]], aes(x = Hour, 
+                                          y = `Solar Zenith Angle`, 
+                                          group = interaction(Month, Day), 
+                                          color = factor(Month))) + geom_line() +
     labs(x = &quot;Time of Day (Hour)&quot;, y = &quot;Solar Zenith Angle (degrees)&quot;,
          title = &quot;Solar Zenith Angle by Time of Day (Spaghetti Plot)&quot;) +
-    scale_color_discrete(name = &quot;Month&quot;, labels = c(&quot;January&quot;, &quot;February&quot;, &quot;March&quot;, &quot;April&quot;, &quot;May&quot;, &quot;June&quot;, &quot;July&quot;, &quot;August&quot;, &quot;September&quot;, &quot;October&quot;, &quot;November&quot;, &quot;December&quot;)) +
+    scale_color_discrete(name = &quot;Month&quot;, 
+                         labels = c(&quot;Jan&quot;, &quot;Feb&quot;, &quot;Mar&quot;, &quot;Apr&quot;, &quot;May&quot;, &quot;Jun&quot;, 
+                                    &quot;Jul&quot;, &quot;Aug&quot;, &quot;Sep&quot;, &quot;Oct&quot;, &quot;Nov&quot;, &quot;Dec&quot;)) +
     theme_minimal() +
     theme(legend.position = &quot;top&quot;, axis.text.x = element_text(angle = 45, hjust = 1))
   
@@ -633,7 +704,9 @@ for(i in (1:3)) {
   filtered_data &lt;- city_data[[i]] %&gt;%
     filter(Month %in% c(6, 12))
   
-  p3 &lt;- ggplot(data = filtered_data, aes(x = Hour, y = `Solar Zenith Angle`, group = interaction(Month, Day), color = factor(Month))) +
+  p3 &lt;- ggplot(data = filtered_data, aes(x = Hour, y = `Solar Zenith Angle`, 
+                                         group = interaction(Month, Day), 
+                                         color = factor(Month))) +
     geom_line() +
     labs(x = &quot;Time of Day (Hour)&quot;, y = &quot;Solar Zenith Angle (degrees)&quot;,
          title = &quot;Solar Zenith Angle by Time of Day (June and December Only)&quot;) +
@@ -643,11 +716,16 @@ for(i in (1:3)) {
   
   
   #plotting how solar irradiance is affected by time of month
-  city_data[[i]]$Month &lt;- factor(city_data[[i]]$Month, levels = 1:12, labels = c(&quot;Jan&quot;, &quot;Feb&quot;, &quot;Mar&quot;, &quot;Apr&quot;, &quot;May&quot;, &quot;Jun&quot;, &quot;Jul&quot;, &quot;Aug&quot;, &quot;Sep&quot;, &quot;Oct&quot;, &quot;Nov&quot;, &quot;Dec&quot;))
+  city_data[[i]]$Month &lt;- factor(city_data[[i]]$Month, levels = 1:12, 
+                                 labels = c(&quot;Jan&quot;, &quot;Feb&quot;, &quot;Mar&quot;, &quot;Apr&quot;, &quot;May&quot;, 
+                                            &quot;Jun&quot;, &quot;Jul&quot;, &quot;Aug&quot;, &quot;Sep&quot;, &quot;Oct&quot;, 
+                                            &quot;Nov&quot;, &quot;Dec&quot;))
   agg_data &lt;- city_data[[i]] %&gt;%
     group_by(Month, Hour) %&gt;%
     summarize(Avg_GHI = mean(GHI))
-  p4 &lt;- ggplot(data = city_data[[i]], aes(x = Hour, y = GHI, group = interaction(Month, Hour), color = Month)) +
+  p4 &lt;- ggplot(data = city_data[[i]], aes(x = Hour, y = GHI, 
+                                          group = interaction(Month, Hour), 
+                                          color = Month)) +
     geom_line(size = 1.5, alpha = 0.7) +  # Set the size to 1.5 (adjust as needed)
     labs(x = &quot;Hour of the Day&quot;, y = &quot;Average Global Horizontal Irradiance (W/m²)&quot;,
          title = &quot;Average Solar Irradiance by Hour for Each Month (Spaghetti Plot)&quot;) +
@@ -662,7 +740,7 @@ for(i in (1:3)) {
   
   # Effect of clouds on GHI
   p5 &lt;- ggplot(data = city_data[[i]], aes(x = Cloud_Type, y = GHI)) +
-    stat_summary(data = subset(city_data[[i]], `Solar Zenith Angle` &gt;= 0 &amp; `Solar Zenith Angle` &lt;= 80),
+    stat_summary(data = subset(city_data[[i]], `Solar Zenith Angle` &lt;= 80),
                  fun = &quot;mean&quot;, geom = &quot;bar&quot;, fill = &quot;skyblue&quot;, color = &quot;black&quot;) +
     labs(x = &quot;Cloud_Type&quot;, y = &quot;Mean Global Horizontal Irradiance (W/m²)&quot;,
          title = &quot;Effect of Cloud Type on Irradiance (Solar Zenith: 0-80 degrees)&quot;) +
@@ -672,11 +750,13 @@ for(i in (1:3)) {
   names(city_data[[i]])
   
   # temperature vs irradiance boxplot
-  p6 &lt;- ggplot(data = subset(city_data[[i]], `Solar Zenith Angle` &gt;= 0 &amp; `Solar Zenith Angle` &lt;= 80),
-         aes(x = cut(Temperature, breaks = seq(min(Temperature), max(Temperature) + 2, by = 2)), y = GHI)) +
+  p6 &lt;- ggplot(data = subset(city_data[[i]], `Solar Zenith Angle` &lt;= 80),
+         aes(x = cut(Temperature, breaks = seq(min(Temperature), 
+                                               max(Temperature) + 2, by = 2)), y = GHI)) +
     geom_boxplot() +
     labs(x = &quot;Temperature (°C)&quot;, y = &quot;Global Horizontal Irradiance (W/m²)&quot;,
-         title = &quot;Temperature vs. Global Horizontal Irradiance (Solar Zenith: 0-80 degrees)&quot;) +
+         title = &quot;Temperature vs. Global Horizontal Irradiance 
+                  (Solar Zenith: 0-80 degrees)&quot;) +
     theme_minimal()
   
   
@@ -689,7 +769,8 @@ for(i in (1:3)) {
   p7 &lt;- ggplot(data = filtered_data, aes(x = Albedo_Bin, y = GHI)) +
     geom_boxplot(outlier.color = &quot;gray&quot;, size = 0.5) +
     labs(x = &quot;Surface Albedo&quot;, y = &quot;Global Horizontal Irradiance (W/m²)&quot;,
-         title = &quot;Distribution of GHI for Different Surface Albedo (Grouped by bins of 0.005)\n(Zenith: 0-80 degrees)&quot;) +
+         title = &quot;Distribution of GHI for Different 
+         Surface Albedo (Grouped by bins of 0.005)\n(Zenith: 0-80 degrees)&quot;) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
   
@@ -705,15 +786,21 @@ for(i in (1:3)) {
   
   #Precipitable Water vs GHI (for hours during sunlight)
   filtered_data &lt;- filtered_data %&gt;%
-    mutate(PrecipitableWater_Bin = cut(`Precipitable Water`, breaks = seq(min(`Precipitable Water`), max(`Precipitable Water`), by = 0.15)))
+    mutate(PrecipitableWater_Bin = cut(`Precipitable Water`, 
+                                       breaks = seq(min(`Precipitable Water`), 
+                                                    max(`Precipitable Water`), 
+                                                    by = 0.15)))
   p9 &lt;- ggplot(data = filtered_data, aes(x = PrecipitableWater_Bin, y = GHI)) +
     geom_boxplot(fill = &quot;skyblue&quot;, color = &quot;black&quot;) +
-    labs(x = &quot;Precipitable Water (Bin Size: 0.05)&quot;, y = &quot;Global Horizontal Irradiance (W/m²)&quot;,
+    labs(x = &quot;Precipitable Water (Bin Size: 0.05)&quot;, 
+         y = &quot;Global Horizontal Irradiance (W/m²)&quot;,
          title = &quot;GHI vs. Precipitable Water (Zenith: 0-80 degrees)&quot;) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-  p &lt;- list(temp, dew, humidity, albedo, wind, pressure, windD, precip, zenith, ghi, cloud, vsTemp, vsDew, vsHumid, vsAlbedo, vsWindS, vsPressure, vsWindD, vsPrecip, vsZenith, vsCloud, p1, p2, p3, p4, p5, p6, p7, p8, p9)
+  p &lt;- list(temp, dew, humidity, albedo, wind, pressure, windD, precip, zenith, 
+            ghi, cloud, vsTemp, vsDew, vsHumid, vsAlbedo, vsWindS, vsPressure, 
+            vsWindD, vsPrecip, vsZenith, vsCloud, p1, p2, p3, p4, p5, p6, p7, p8, p9)
   allPlots[[i]] &lt;- p
 }</code></pre>
 <pre class="r"><code># 1 is LV, 2 is NY, 3 is Chicago
@@ -738,8 +825,18 @@ dummy &lt;- dummyVars(&quot; ~.&quot;, data=data.processed)
 data.processed &lt;- data.frame(predict(dummy, data.processed))
 
 # cyclical encoding on wind direction, month, day, hour, minute
-data.processed &lt;- data.processed %&gt;% mutate(sinWD= sin(X.Wind.Direction. * pi / 180), cosWD = cos(X.Wind.Direction. * pi / 180)) %&gt;% select(-X.Wind.Direction.)
-data.processed &lt;- data.processed %&gt;% mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), sin.minute = sin(2 * pi * Minute / 60), cos.minute = cos(2 * pi * Minute / 60)) %&gt;% select(-c(Month, Day, Hour, Minute))
+data.processed &lt;- data.processed %&gt;% 
+  mutate(sinWD= sin(X.Wind.Direction. * pi / 180), 
+         cosWD = cos(X.Wind.Direction. * pi / 180)) %&gt;% select(-X.Wind.Direction.)
+data.processed &lt;- data.processed %&gt;% mutate(sin.month = sin(2 * pi * Month / 12), 
+                                            cos.month = cos(2 * pi * Month / 12), 
+                                            sin.day = sin(2 * pi * Day / 31), 
+                                            cos.day = cos(2 * pi * Day / 31), 
+                                            sin.hour = sin(2 * pi * Hour / 24), 
+                                            cos.hour = cos(2 * pi * Hour / 24), 
+                                            sin.minute = sin(2 * pi * Minute / 60), 
+                                            cos.minute = cos(2 * pi * Minute / 60))
+data.processed &lt;- data.processed %&gt;% select(-c(Month, Day, Hour, Minute))
 
 # min max standardization on X variables (do not change y variable)
 ghi_col &lt;- data.processed$GHI
@@ -830,7 +927,9 @@ R2(test_y, predictions)</code></pre>
 <div id="visualizations" class="section level2">
 <h2>Visualizations</h2>
 <pre class="r"><code>## This outputs the epoch training graph and the importance table for XGB
-fitXGB$evaluation_log[10:nrow(fitXGB$evaluation_log),] %&gt;% ggplot(aes(x=iter)) + geom_point(aes(y=test_rmse), color=&quot;red&quot;) + geom_point(aes(y=train_rmse), color=&quot;blue&quot;) + labs(y=&quot;RMSE&quot;)
+fitXGB$evaluation_log[10:nrow(fitXGB$evaluation_log),] %&gt;% ggplot(aes(x=iter)) + 
+  geom_point(aes(y=test_rmse), color=&quot;red&quot;) + 
+  geom_point(aes(y=train_rmse), color=&quot;blue&quot;) + labs(y=&quot;RMSE&quot;)
 
 importance &lt;- xgb.importance(colnames(xgb_train), model=fitXGB)
 xgb.ggplot.importance(importance)
@@ -842,24 +941,33 @@ xgb.ggplot.shap.summary(data=test_x, model=fitXGB)</code></pre>
 <div id="map" class="section level2">
 <h2>Map</h2>
 <pre class="r"><code># Read in the Raw Data (same cleaning procedure as above)
-files &lt;- list.files(path=&quot;data/MapData/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=TRUE)
-files_no_path &lt;- list.files(path=&quot;data/MapData/raw&quot;, pattern=&quot;\\.csv$&quot;, full.names=FALSE)
+files &lt;- list.files(path = &quot;data/MapData/raw&quot;, 
+                    pattern = &quot;\\.csv$&quot;, full.names = TRUE)
+files_no_path &lt;- list.files(path = &quot;data/MapData/raw&quot;, 
+                            pattern = &quot;\\.csv$&quot;, full.names = FALSE)
 read &lt;- lapply(files, readLines)
 first_two &lt;- lapply(read, get_first_two)
 read &lt;- lapply(read, remove_first_two)
 
-for(i in 1:length(files)) {
-  fwrite(read[i], file=(paste0(&quot;data/MapData/cleaned/&quot;, &quot;data&quot;, files_no_path[i])), quote=FALSE)
-  fwrite(first_two[i], file=(paste0(&quot;data/MapData/cleaned/&quot;, &quot;info&quot;, files_no_path[i])), quote=FALSE)
+for (i in 1:length(files)) {
+    fwrite(read[i], 
+           file = (paste0(&quot;data/MapData/cleaned/&quot;, &quot;data&quot;, 
+                          files_no_path[i])), quote = FALSE)
+    fwrite(first_two[i], 
+           file = (paste0(&quot;data/MapData/cleaned/&quot;, &quot;info&quot;, 
+                          files_no_path[i])), quote = FALSE)
 }
 
 
-files_cleaned &lt;- list.files(path=&quot;data/MapData/cleaned&quot;, pattern=&quot;data.*\\.csv$&quot;, full.names=TRUE)
+files_cleaned &lt;- list.files(path=&quot;data/MapData/cleaned&quot;, 
+                            pattern=&quot;data.*\\.csv$&quot;, full.names=TRUE)
 f_cleaned &lt;- lapply(files_cleaned, fread)
 
-# we keep the info csv instead of just removing it and add in the extra data which includes location ID as well as long and lat
+# we keep the info csv instead of just removing it and add in the extra data 
+# which includes location ID as well as long and lat
 # every point has a unique location ID
-info_cleaned &lt;- list.files(path=&quot;data/MapData/cleaned&quot;, pattern=&quot;info.*\\.csv$&quot;, full.names=TRUE)
+info_cleaned &lt;- list.files(path=&quot;data/MapData/cleaned&quot;, 
+                           pattern=&quot;info.*\\.csv$&quot;, full.names=TRUE)
 i_cleaned &lt;- lapply(info_cleaned, fread)
 for(i in 1:length(f_cleaned)) {
   f_cleaned[[i]]$ID &lt;- i_cleaned[[i]]$`Location ID`  
@@ -879,8 +987,16 @@ dummy &lt;- dummyVars(&quot; ~.&quot;, data=data.processed)
 data.processed &lt;- data.frame(predict(dummy, data.processed))
 
 # cyclical encoding on wind direction, month, day, hour, minute
-data.processed &lt;- data.processed %&gt;% mutate(sinWD= sin(X.Wind.Direction. * pi / 180), cosWD = cos(X.Wind.Direction. * pi / 180)) %&gt;% select(-X.Wind.Direction.)
-data.processed &lt;- data.processed %&gt;% mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), sin.minute = sin(2 * pi * Minute / 60), cos.minute = cos(2 * pi * Minute / 60)) %&gt;% select(-c(Month, Day, Hour, Minute))
+data.processed &lt;- data.processed %&gt;% 
+  mutate(sinWD= sin(X.Wind.Direction. * pi / 180), 
+         cosWD = cos(X.Wind.Direction. * pi / 180)) %&gt;% select(-X.Wind.Direction.)
+data.processed &lt;- data.processed %&gt;% 
+  mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), 
+         sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), 
+         sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), 
+         sin.minute = sin(2 * pi * Minute / 60), 
+         cos.minute = cos(2 * pi * Minute / 60)) %&gt;% 
+  select(-c(Month, Day, Hour, Minute))
 
 # min max standardization on X variables (do not change y variable)
 ghi_col &lt;- data.processed$GHI
@@ -893,7 +1009,9 @@ data.processed$X.Cloud.Type.10 &lt;- 0
 data.processed$Year &lt;- (21/20)
 
 # reorder the columns to be the same as the original set
-data.processed &lt;- data.processed[, c(32, 1, 15, 18, 13, 2, 14, 17, 16, 3, 4, 30, 5, 6, 8, 9, 10, 11, 31, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29)]
+data.processed &lt;- data.processed[, c(32, 1, 15, 18, 13, 2, 14, 17, 16, 3, 4, 30, 
+                                     5, 6, 8, 9, 10, 11, 31, 19, 20, 21, 22, 23, 
+                                     24, 25, 26, 27, 28, 29)]
 
 data_x &lt;- data.matrix(data.processed[,-ncol(data.processed)])
 data_y &lt;- data.matrix(data.processed[,ncol(data.processed)])
@@ -907,7 +1025,8 @@ avg_long = mean(full$Long)
 avg_lat = mean(full$Lat)
 
 # sum up the GHI and make it only the location number of points
-sums &lt;- full %&gt;% group_by(ID) %&gt;% mutate(sumGHI = sum(PredGHI)) %&gt;% select(ID, Long, Lat, sumGHI) %&gt;% unique()
+sums &lt;- full %&gt;% group_by(ID) %&gt;% mutate(sumGHI = sum(PredGHI)) %&gt;% 
+  select(ID, Long, Lat, sumGHI) %&gt;% unique()
 
 # create SF points for the long lat with the 4326 projection
 stFull &lt;- st_as_sf(sums, coords=c(&quot;Long&quot;, &quot;Lat&quot;), crs=4326)
@@ -922,7 +1041,9 @@ stFull &lt;- stFull %&gt;% mutate(dist = as.numeric(st_distance(center, geometry
 
 # output the final heat map
 stFull &lt;- stFull %&gt;% mutate(Power = sumGHI * (0.9999)^(dist / 1000))
-heatMap &lt;- stFull %&gt;% ggplot() + geom_sf(aes(color=Power, size = Power)) + scale_color_gradient(low=&quot;blue&quot;, high=&quot;red&quot;) 
+heatMap &lt;- stFull %&gt;% 
+  ggplot() + geom_sf(aes(color=Power, size = Power)) + 
+  fscale_color_gradient(low=&quot;blue&quot;, high=&quot;red&quot;) 
 ggsave(&quot;heatmap_final.png&quot;, heatMap)</code></pre>
 </div>
 
