@@ -449,7 +449,7 @@ history <- fitNN %>% fit(
 
 ```
 
-
+## Results of Data
 
 ```{r}
 # Create predictions and output both r^2 and RMSE
@@ -475,6 +475,7 @@ R2(test_y, predictions)
 ```
 
 ```{r, create epoch training graph and importance graph for XGB}
+## This outputs the epoch training graph and the importance table for XGB
 fitXGB$evaluation_log[10:nrow(fitXGB$evaluation_log),] %>% ggplot(aes(x=iter)) + geom_point(aes(y=test_rmse), color="red") + geom_point(aes(y=train_rmse), color="blue") + labs(y="RMSE")
 importance <- xgb.importance(colnames(xgb_train), model=fitXGB)
 xgb.plot.importance(importance)
