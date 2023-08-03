@@ -1,0 +1,56 @@
+---
+title: "concRete.rmd"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, results = "hide", fig.width=8, fig.height=4)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel)
+```
+
+```{r some EDA stuffs, include=FALSE}
+solar_gen_weather <- read.csv("data/solar-gen-weather.csv")
+str(solar_gen_weather)
+head(solar_gen_weather)
+summary(solar_gen_weather)
+
+# we remove angle_of_incidence because this depends on the tilt of the PV panel and not on the geographic placement
+solar_gen_weather <- solar_gen_weather %>% select(-angle_of_incidence)
+
+
+fit <- lm(generated_power_kw ~ ., solar_gen_weather)
+fit <- update(fit, .~. - medium_cloud_cover_mid_cld_lay)
+fit <- update(fit, .~. - wind_direction_900_mb)
+fit <- update(fit, .~. - wind_direction_10_m_above_gnd)
+fit <- update(fit, .~. - wind_speed_80_m_above_gnd)
+fit <- update(fit, .~. - total_precipitation_sfc)
+fit <- update(fit, .~. - snowfall_amount_sfc)
+fit <- update(fit, .~. - wind_speed_10_m_above_gnd)
+fit <- update(fit, .~. - wind_speed_900_mb)
+
+summary(fit)
+
+# graph <- solar_gen_weather %>% ggplot(aes(x = shortwave_radiation_backwards_sfc, y = generated_power_kw)) + geom_point() + geom_smooth(method="lm")
+# graph
+# 
+# sgw <- solar_gen_weather %>% rename(temp = temperature_2_m_above_gnd, humidity = relative_humidity_2_m_above_gnd, )
+
+```
+
+After doing backwards elimination we find that the most important variables are as follows:
+temperature_2_m_above_gnd: measured in degrees celsius
+relative_humidity_2_m_above_gnd: measured in percent
+mean_sea_level_pressure_MSL: measured in millibars
+total_cloud_cover_sfc
+high_cloud_cover_high_cld_lay
+low_cloud_cover_low_cld_lay
+shortwave_radiation_backwards_sfc
+wind_direction_80_m_above_gnd
+wind_gust_10_m_above_gnd
+zenith: calculated based on time of day and longitude and latitude
+azimuth: calculated based on time of day and longitude and latitude
+

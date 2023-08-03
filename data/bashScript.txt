@@ -1,1 +1,0 @@
-for filename in *.csv; do mv "$filename" "${filename/903523_41.89_-87.62_/}"; done

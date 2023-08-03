@@ -1,0 +1,245 @@
+---
+title: "SolarModeling"
+output: html_document
+date: "2023-07-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, e1071, caret, keras)
+```
+
+```{r}
+solarData <- fread("data/SolarFull.csv")
+solarData$`Cloud Type` <- as.factor(solarData$`Cloud Type`)
+```
+
+```{r}
+
+solarData <- (solarData[which(solarData$`Solar Zenith Angle` < 90)])
+
+summary(solarData)
+
+N <- length(solarData$GHI) 
+n1 <- floor(.8*N)
+set.seed(10)
+# Split data to three portions of .6, .2 and .2 of data size N
+idx_train <- sample(N, n1)
+idx_no_train <- (which(! seq(1:N) %in% idx_train))
+data.train <- solarData[idx_train,]
+data.test <- solarData[idx_no_train,]
+
+names(solarData)
+
+
+fit <- lm(GHI ~ ., data.train)
+summary(fit)
+
+fitNoLoc <- lm(GHI ~ .-Location, data.train)
+summary(fitNoLoc)
+
+fitTemp <- lm(GHI ~ Temperature, data.train)
+
+# data.test$Prediction.noLoc <- predict(fitNoLoc, data.test, type="response")
+# data.test <- data.test %>% mutate(sq.resid.noLoc = (Prediction.noLoc - GHI) * (Prediction.noLoc - GHI))
+# MSE.noLoc <- mean(data.test$sq.resid.noLoc)
+# MSE.noLoc
+# 
+# 
+# data.test$Prediction.withLoc <- predict(fit, data.test, type="response")
+# data.test <- data.test %>% mutate(sq.resid.loc = (Prediction.withLoc - GHI) * (Prediction.withLoc - GHI))
+# MSE.Loc <- mean(data.test$sq.resid.loc)
+# MSE.Loc
+
+
+# with backwards elimination
+Anova(fitNoLoc)
+summary(fitNoLoc)
+# fitNoLoc <- update(fitNoLoc, .~.-`Wind Direction`)
+# fitNoLoc <- update(fitNoLoc, .~.-`Temperature`)
+# fitNoLoc <- update(fitNoLoc, .~.-`Hour`)
+fitNoLoc.backwards <- update(fitNoLoc, .~.-`Day`)
+fitNoLoc.backwards <- update(fitNoLoc, .~.-`Wind Speed`)
+fitNoLoc.backwards <- update(fitNoLoc, .~.-`Minute`)
+
+# fitNoLoc <- update(fitNoLoc, .~.-`Dew Point`)
+Anova(fitNoLoc.backwards)
+summary(fitNoLoc.backwards)
+
+getStats <- function(fit, testing_data) {
+  testing_data$predict <- predict(fit, testing_data, type="response")
+  real.mean <- mean(testing_data$GHI)
+  testing_data <- testing_data %>% mutate(sq.resid = (predict - GHI) * (predict - GHI), abs.resid <- abs(predict - GHI), diff.mean <- abs(GHI - real.mean))
+  RMSE <- sqrt(mean(testing_data$sq.resid))
+  MAE <- mean(testing_data$abs.resid)
+  RAE <- sum(testing_data$abs.resid) / sum(testing_data$diff.mean)
+  
+  return(list(RMSE, MAE, RAE))
+}
+
+getStats(fit, data.test)
+getStats(fitNoLoc, data.test)
+getStats(fitNoLoc.backwards, data.test)
+
+# plot(fitNoLoc)
+
+```
+
+```{r, normalize/preprocess all data}
+# no standardization as the data is likely not in a bell curve, can try to do a gaussian standardization later
+# first we remove location
+data.processed <- solarData %>% select(-Location)
+# then we do a one hot encoding on the cloud type
+dummy <- dummyVars(" ~.", data=data.processed)
+data.processed <- data.frame(predict(dummy, data.processed))
+
+# cyclical encoding on month, day, hour, minute, and wind direction
+data.processed <- data.processed %>% mutate(sinWD= sin(X.Wind.Direction. * pi / 180), cosWD = cos(X.Wind.Direction. * pi / 180)) %>% select(-X.Wind.Direction.)
+
+data.processed <- data.processed %>% mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), sin.minute = sin(2 * pi * Minute / 60), cos.minute = cos(2 * pi * Minute / 60)) %>% select(-c(Month, Day, Hour, Minute))
+
+# min max standardization
+processed <- preProcess(data.processed, method=c("range"))
+data.processed <- predict(processed, data.processed)
+```
+
+```{r}
+
+N <- length(data.processed$GHI) 
+n1 <- floor(.8*N)
+set.seed(10)
+# Split data to three portions of .6, .2 and .2 of data size N
+idx_train <- sample(N, n1)
+idx_no_train <- (which(! seq(1:N) %in% idx_train))
+data.train <- data.processed[idx_train,]
+data.test <- data.processed[idx_no_train,]
+
+# run SVR
+fitSVR <- svm(GHI ~ ., data.train)
+```
+
+```{r, trying LASSO instead}
+#Step 1: Prepare design matrix
+Y <- solarData$GHI # extract Y
+X.fl <- model.matrix(GHI~., data=solarData)[, -1] # take the first column's of 1 out #Step 2: Find x's output from LASSO with min cross-validation error
+set.seed(10) # to control the ramdomness in K folds
+fit.fl.cv <- cv.glmnet(X.fl, Y, alpha=1, nfolds=10, intercept = T)
+
+plot(fit.fl.cv)
+
+coef.min <- coef(fit.fl.cv, s="lambda.1se") #s=c("lambda.1se","lambda.min") or lambda value
+coef.min.nonzero <- coef.min[which(coef.min !=0),] # get the non=zero coefficients
+var.min <- rownames(as.matrix(coef.min))[-1] # output the names dim(as.matrix(coef.min))
+```
+
+
+```{r}
+solarData_ML <- fread("data/SolarFull.csv")
+solarData_ML$`Cloud Type` <- as.factor(solarData_ML$`Cloud Type`)
+solarData_ML <- solarData_ML[solarData_ML$`Solar Zenith Angle` < 90]
+vars_to_drop <- c("Year", "Month", "Day", "Hour", "Minute", "Location", "Cloud Type")
+solarData_ML_filtered <- solarData_ML %>% select(-one_of(vars_to_drop))
+solarData_ML_filtered <- na.omit(solarData_ML_filtered)
+scaled_data <- as.data.frame(scale(solarData_ML_filtered))
+
+set.seed(123)
+index <- createDataPartition(scaled_data$GHI, p = 0.8, list = FALSE)
+train_data <- scaled_data[index, ]
+test_data <- scaled_data[-index, ]
+
+# Create the Keras model
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(train_data) - 1) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1)  # Output layer with 1 neuron for GHI prediction
+
+# Compile the model
+model %>% compile(
+  loss = "mean_squared_error",
+  optimizer = optimizer_adam(),
+  metrics = c("mean_squared_error")
+)
+
+# Extract predictors (input) and target variable (output)
+x_train <- as.matrix(train_data[, -1])
+y_train <- as.vector(train_data$GHI)
+x_test <- as.matrix(test_data[, -1])
+y_test <- as.vector(test_data$GHI)
+
+# Train the model
+history <- model %>% fit(
+  x_train, y_train,
+  epochs = 100,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+# Evaluate the model on the test data
+metrics <- model %>% evaluate(x_test, y_test)
+metrics
+```
+
+
+```{r}
+solarData_ML <- fread("data/SolarFull.csv")
+solarData_ML$`Cloud Type` <- as.factor(solarData_ML$`Cloud Type`)
+solarData_ML <- solarData_ML[solarData_ML$`Solar Zenith Angle` < 90]
+vars_to_drop <- c("Year", "Month", "Day", "Hour", "Minute", "Location", "Cloud Type")
+solarData_ML_filtered <- solarData_ML %>% select(-one_of(vars_to_drop))
+solarData_ML_filtered <- na.omit(solarData_ML_filtered)
+scaled_data <- as.data.frame(scale(solarData_ML_filtered))
+
+set.seed(69)
+index <- createDataPartition(scaled_data$GHI, p = 0.8, list = FALSE)
+train_data <- scaled_data[index, ]
+test_data <- scaled_data[-index, ]
+
+# Extract predictors (input) and target variable (output)
+x_train <- as.matrix(train_data[, -which(names(train_data) == "GHI")])
+y_train <- as.vector(train_data$GHI)
+x_test <- as.matrix(test_data[, -which(names(test_data) == "GHI")])
+y_test <- as.vector(test_data$GHI)
+
+# Create the Keras model
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(x_train)) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1)  # Output layer with 1 neuron for GHI prediction
+
+# Compile the model
+model %>% compile(
+  loss = "mean_squared_error",
+  optimizer = optimizer_adam(),
+  metrics = c("mean_squared_error")
+)
+
+# Train the model
+history <- model %>% fit(
+  x_train, y_train,
+  epochs = 8,
+  batch_size = 32,
+  validation_split = 0.2
+)
+
+model_path <- "ML_models/solar_irr_general.h5"
+save_model_hdf5(model, model_path)
+
+# Evaluate the model on the test data
+metrics <- model %>% evaluate(x_test, y_test)
+metrics
+```
+
+
+```{r}
+
+model_loaded <- load_model_hdf5(model_path)
+metrics <- model_loaded %>% evaluate(x_test, y_test)
+metrics
+```
+
+
+
+

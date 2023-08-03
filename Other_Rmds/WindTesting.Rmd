@@ -1,0 +1,39 @@
+---
+title: "WindTesting.rmd"
+date: "2023-07-28"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: lumen
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+  pdf_document:
+    toc_depth: '4'
+    number_sections: yes
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork)
+```
+
+
+```{r}
+lv_full <- fread("data/Las_Vegas_Solar_Irradiation/cleaned/2000.csv")
+str(lv_full)
+lv_full %>% ggplot(aes(group=`Temperature`, y = `Wind Speed`)) + geom_boxplot()
+lv_full %>% ggplot(aes(group=`Surface Albedo`, y = `Wind Speed`)) + geom_boxplot()
+lv_full %>% ggplot(aes(x=`Relative Humidity`, y = `Wind Speed`)) + geom_point()
+lv_full %>% ggplot(aes(group=`Pressure`, y = `Wind Speed`)) + geom_boxplot()
+lv_full %>% ggplot(aes(group=`Precipitable Water`, y = `Wind Speed`)) + geom_boxplot()
+lv_full %>% ggplot(aes(x=`GHI`, y = `Wind Speed`)) + geom_point()
+lv_full %>% ggplot(aes(group=`Dew Point`, y = `Wind Speed`)) + geom_boxplot()
+
+```

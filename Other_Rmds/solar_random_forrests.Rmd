@@ -1,0 +1,81 @@
+---
+title: "SolarModeling"
+output: html_document
+date: "2023-07-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 0, digits = 3)  # controls base R output
+# check if you have ISLR package, if not, install it
+if(!require('pacman')) {install.packages('pacman')}
+pacman::p_load(ISLR, readxl, tidyverse, magrittr, dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, keras, caret, randomForest, Metrics, caTools)
+```
+
+
+```{r}
+
+solarData <- fread("data/SolarFull.csv")
+solarData$`Cloud Type` <- as.factor(solarData$`Cloud Type`)
+
+data.processed <- solarData %>% select(-Location)
+# then we do a one hot encoding on the cloud type
+dummy <- dummyVars(" ~.", data=data.processed)
+data.processed <- data.frame(predict(dummy, data.processed))
+
+# cyclical encoding on month, day, hour, minute, and wind direction
+data.processed <- data.processed %>% mutate(sinWD= sin(X.Wind.Direction. * pi / 180), cosWD = cos(X.Wind.Direction. * pi / 180)) %>% select(-X.Wind.Direction.)
+
+data.processed <- data.processed %>% mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), sin.minute = sin(2 * pi * Minute / 60), cos.minute = cos(2 * pi * Minute / 60)) %>% select(-c(Month, Day, Hour, Minute))
+GHI_column <- data.processed$GHI
+
+data.processed <- data.processed %>% select(-GHI)
+processed <- preProcess(data.processed, method = c("range"))
+data.processed <- predict(processed, data.processed)
+data.processed$GHI <- GHI_column
+```
+
+```{r}
+set.seed(69)
+
+# split_index <- sample(1:nrow(data.processed), size = 50000)
+# test_index <-sample(1:nrow(data.processed), size = 10000)
+# train_data <- data.processed[split_index, ]
+# test_data <- data.processed[test_index, ]
+
+N <- length(data.processed$GHI) 
+# n1 <- floor(.8*N)
+n1 <- 50000
+n2 <- 10000
+set.seed(10)
+idx_train <- sample(N, n1)
+idx_no_train <- (which(! seq(1:N) %in% idx_train))
+idx_test <- sample(idx_no_train, n2)
+idx_val <- (which(! idx_no_train %in% idx_test))
+train_data <- data.processed[idx_train,]
+test_data <- data.processed[idx_test,]
+val_data <- data.processed[idx_val,]
+
+rf_model <- randomForest(GHI ~., data = train_data, ntree = 512)
+saveRDS(rf_model, file = "ML_models/rf_model.rds")
+
+predictions <- predict(rf_model, newdata = test_data)
+mse <- mean((test_data$GHI - predictions)^2)
+sqrt(mse)
+```
+
+
+```{r}
+
+loaded_rf_model <- readRDS("ML_models/rf_model.rds")
+test_index_new <- sample (1:nrow(data.processed), size = 20000)
+test_data_new <- data.processed[test_index_new,]
+predictions <- predict(rf_model, newdata = test_data_new)
+mse <- mean((test_data_new$GHI - predictions)^2)
+sqrt(mse)
+
+
+
+```
+
+
