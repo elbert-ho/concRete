@@ -1,5 +1,5 @@
 ---
-title: "A Machine Learning Based Approach to Modeling Solar Power Output"
+title: "A Machine Learning Approach to Photovoltaic System Optimization"
 output: html_document
 date: "2023-08-03"
 ---
@@ -385,7 +385,6 @@ data.processed <- data.processed %>% select(-GHI)
 processed <- preProcess(data.processed, method=c("range"))
 data.processed <- predict(processed, data.processed)
 data.processed$GHI <- ghi_col
-
 ```
 
 ## Splitting Data
@@ -473,6 +472,7 @@ predictions <- predict(fitNN, test_x)
 RMSE(test_y, predictions)
 R2(test_y, predictions)
 ```
+
 ## Visualizations
 ```{r, create visualizations for XGB}
 ## This outputs the epoch training graph and the importance table for XGB
@@ -484,4 +484,92 @@ xgb.ggplot.importance(importance)
 tree1 <- xgb.plot.tree(model=fitXGB, trees=1, plot_width = 1000, plot_height=1000)
 tree1 %>% export_svg %>% charToRaw %>% rsvg_pdf("graph.pdf")
 xgb.ggplot.shap.summary(data=test_x, model=fitXGB)
+```
+
+
+## Map
+```{r, create the heatmap}
+# Read in the Raw Data (same cleaning procedure as above)
+files <- list.files(path="data/MapData/raw", pattern="\\.csv$", full.names=TRUE)
+files_no_path <- list.files(path="data/MapData/raw", pattern="\\.csv$", full.names=FALSE)
+read <- lapply(files, readLines)
+first_two <- lapply(read, get_first_two)
+read <- lapply(read, remove_first_two)
+
+for(i in 1:length(files)) {
+  fwrite(read[i], file=(paste0("data/MapData/cleaned/", "data", files_no_path[i])), quote=FALSE)
+  fwrite(first_two[i], file=(paste0("data/MapData/cleaned/", "info", files_no_path[i])), quote=FALSE)
+}
+
+
+files_cleaned <- list.files(path="data/MapData/cleaned", pattern="data.*\\.csv$", full.names=TRUE)
+f_cleaned <- lapply(files_cleaned, fread)
+
+# we keep the info csv instead of just removing it and add in the extra data which includes location ID as well as long and lat
+# every point has a unique location ID
+info_cleaned <- list.files(path="data/MapData/cleaned", pattern="info.*\\.csv$", full.names=TRUE)
+i_cleaned <- lapply(info_cleaned, fread)
+for(i in 1:length(f_cleaned)) {
+  f_cleaned[[i]]$ID <- i_cleaned[[i]]$`Location ID`  
+  f_cleaned[[i]]$Long <- i_cleaned[[i]]$Longitude
+  f_cleaned[[i]]$Lat <- i_cleaned[[i]]$Latitude
+}
+
+# join together all datasets and remove everything above 90 as usual
+full <- f_cleaned %>% reduce(full_join)
+full <- full[which(full$`Solar Zenith Angle` < 90)]
+
+# do the same preprocessing in order to input into the model
+data.processed <- full
+data.processed$`Cloud Type` <- as.factor(data.processed$`Cloud Type`)
+# one hot encoding on the cloud type using caret 
+dummy <- dummyVars(" ~.", data=data.processed)
+data.processed <- data.frame(predict(dummy, data.processed))
+
+# cyclical encoding on wind direction, month, day, hour, minute
+data.processed <- data.processed %>% mutate(sinWD= sin(X.Wind.Direction. * pi / 180), cosWD = cos(X.Wind.Direction. * pi / 180)) %>% select(-X.Wind.Direction.)
+data.processed <- data.processed %>% mutate(sin.month = sin(2 * pi * Month / 12), cos.month = cos(2 * pi * Month / 12), sin.day = sin(2 * pi * Day / 31), cos.day = cos(2 * pi * Day / 31), sin.hour = sin(2 * pi * Hour / 24), cos.hour = cos(2 * pi * Hour / 24), sin.minute = sin(2 * pi * Minute / 60), cos.minute = cos(2 * pi * Minute / 60)) %>% select(-c(Month, Day, Hour, Minute))
+
+# min max standardization on X variables (do not change y variable)
+ghi_col <- data.processed$GHI
+data.processed <- data.processed %>% select(-c(GHI, Year, ID, Long, Lat))
+processed <- preProcess(data.processed, method=c("range"))
+data.processed <- predict(processed, data.processed)
+data.processed$GHI <- ghi_col
+data.processed$X.Cloud.Type.2 <- 0
+data.processed$X.Cloud.Type.10 <- 0
+data.processed$Year <- (21/20)
+
+# reorder the columns to be the same as the original set
+data.processed <- data.processed[, c(32, 1, 15, 18, 13, 2, 14, 17, 16, 3, 4, 30, 5, 6, 8, 9, 10, 11, 31, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29)]
+
+data_x <- data.matrix(data.processed[,-ncol(data.processed)])
+data_y <- data.matrix(data.processed[,ncol(data.processed)])
+
+# predict with our model
+predictions <- predict(fitXGB, data_x)
+full$PredGHI <- predictions
+
+# find the "center"
+avg_long = mean(full$Long)
+avg_lat = mean(full$Lat)
+
+# sum up the GHI and make it only the location number of points
+sums <- full %>% group_by(ID) %>% mutate(sumGHI = sum(PredGHI)) %>% select(ID, Long, Lat, sumGHI) %>% unique()
+
+# create SF points for the long lat with the 4326 projection
+stFull <- st_as_sf(sums, coords=c("Long", "Lat"), crs=4326)
+
+# make the center an SF object as well
+avg.df = data.frame(Long=numeric(), Lat=numeric())
+avg.df[1,] = c(avg_long, avg_lat)
+center <- st_as_sf(avg.df, coords=c("Long", "Lat"), crs=4326)
+
+# calculate the distances in meter
+stFull <- stFull %>% mutate(dist = as.numeric(st_distance(center, geometry)[1]))
+
+# output the final heat map
+stFull <- stFull %>% mutate(Power = sumGHI * (0.9999)^(dist / 1000))
+heatMap <- stFull %>% ggplot() + geom_sf(aes(color=Power, size = Power)) + scale_color_gradient(low="blue", high="red") 
+ggsave("heatmap_final.png", heatMap)
 ```
