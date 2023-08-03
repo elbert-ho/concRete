@@ -236,12 +236,7 @@ for(i in (1:3)) {
     group_by(`Cloud Type`) %>%
     summarise(average_ghi = mean(GHI, na.rm=TRUE)) %>%
     ggplot(aes(x=`Cloud Type`, y=average_ghi)) + geom_point() + labs(title="Average GHI by Month vs. Cloud Type")
-  
-  plots <- list(temp, dew, humidity, albedo, wind, pressure, windD, precip, zenith, ghi, cloud)
-  append(allPlots[[i]], plots)
-  plotsVs <- list(vsTemp, vsDew, vsHumid, vsAlbedo, vsWindS, vsPressure, vsWindD, vsPrecip, vsZenith, vsCloud)
-  append(allPlots[[i]], plotsVs)
-  
+
 # ----------------------------------------------------------------------------------------------------------------------------------
   
   city_data[[i]]$Zenith_Bins <- cut(city_data[[i]]$`Solar Zenith Angle`, breaks = seq(0, 180, by = 10))
@@ -351,12 +346,13 @@ for(i in (1:3)) {
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-  p <- list(p1, p2, p3, p4, p5, p6, p7, p8, p9)
-  append(allPlots[[i]], p)
+  p <- list(temp, dew, humidity, albedo, wind, pressure, windD, precip, zenith, ghi, cloud, vsTemp, vsDew, vsHumid, vsAlbedo, vsWindS, vsPressure, vsWindD, vsPrecip, vsZenith, vsCloud, p1, p2, p3, p4, p5, p6, p7, p8, p9)
+  allPlots[[i]] <- p
 }
 ```
 
 ```{r}
+# 1 is LV, 2 is NY, 3 is Chicago
 allPlots[[1]]
 allPlots[[2]]
 allPlots[[3]]
