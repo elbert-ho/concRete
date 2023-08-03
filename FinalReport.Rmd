@@ -4,7 +4,8 @@ output: html_document
 date: "2023-08-03"
 ---
 
-```{r}
+## Setup
+```{r, setup}
 if(!require('pacman')) {install.packages('pacman')}
 pacman::p_load(dplyr, ggplot2, ggrepel, data.table, lubridate, ggpubr, patchwork, car, glmnet, e1071, caret, xgboost, keras, randomForest, sf)
 ```
@@ -83,7 +84,7 @@ fwrite(all_data, file="data/SolarFull.csv")
 ```
 
 ## EDA on Cleaned Data
-```{r}
+```{r, EDA}
 
 LV <- fread("data/Las_Vegas_Solar_Irradiation/LV.csv")
 NY <- fread("data/NY_Solar_Irradiation/ny.csv")
@@ -351,7 +352,7 @@ for(i in (1:3)) {
 }
 ```
 
-```{r}
+```{r, output plots}
 # 1 is LV, 2 is NY, 3 is Chicago
 allPlots[[1]]
 allPlots[[2]]
@@ -359,7 +360,7 @@ allPlots[[3]]
 ```
 
 ## Preprocessing 
-```{r}
+```{r, preprocess}
 # read in the full dataset
 solarData <- fread("data/SolarFull.csv")
 solarData$`Cloud Type` <- as.factor(solarData$`Cloud Type`)
@@ -388,7 +389,7 @@ data.processed$GHI <- ghi_col
 ```
 
 ## Splitting Data
-```{r}
+```{r, split data}
 N <- length(data.processed$GHI) 
 # n1 <- floor(.8*N)
 n1 <- 300000
@@ -404,7 +405,7 @@ data.val <- data.processed[idx_val,]
 ```
 
 ## Train and Run Models
-```{r}
+```{r, create matrices}
 # create x and y matrices for training, testing, validation
 train_x <- data.matrix(data.train[,-ncol(data.train)])
 train_y <- data.matrix(data.train[,ncol(data.train)])
@@ -451,7 +452,7 @@ history <- fitNN %>% fit(
 
 ## Results of Data
 
-```{r}
+```{r, predictions}
 # Create predictions and output both r^2 and RMSE
 predictions <- predict(fitSVR, data.test)
 RMSE(test_y, predictions)
