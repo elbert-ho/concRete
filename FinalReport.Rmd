@@ -28,7 +28,7 @@ remove_first_two <- function(x) {
 }
 
 # will be used later on
-first_two <- function(x) {
+get_first_two <- function(x) {
     x[(1:2)]
 }
 
