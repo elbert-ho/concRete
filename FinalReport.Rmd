@@ -394,7 +394,7 @@ for(i in (1:3)) {
                                                max(Temperature) + 2, by = 2)), y = GHI)) +
     geom_boxplot() +
     labs(x = "Temperature (°C)", y = "Global Horizontal Irradiance (W/m²)",
-         title = "Temperature vs. Global Horizontal Irradiance 
+         title = "Global Horizontal Irradiance vs. Temperature  
                   (Solar Zenith: 0-80 degrees)") +
     theme_minimal()
   
@@ -443,7 +443,6 @@ for(i in (1:3)) {
   allPlots[[i]] <- p
 }
 ```
-
 ```{r, output plots}
 # 1 is LV, 2 is NY, 3 is Chicago
 allPlots[[1]]
