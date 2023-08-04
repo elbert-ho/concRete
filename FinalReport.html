@@ -1058,6 +1058,180 @@ heatMap &lt;- stFull %&gt;%
   fscale_color_gradient(low=&quot;blue&quot;, high=&quot;red&quot;) 
 ggsave(&quot;heatmap_final.png&quot;, heatMap)</code></pre>
 </div>
+<div id="tilt-graph" class="section level2">
+<h2>Tilt Graph</h2>
+<pre class="r"><code>solar_df &lt;- fread(&quot;data/MapData/cleaned/data1841034_35.70_-106.11_2021.csv&quot;)
+solar_df$Date &lt;- as.POSIXct(paste(solar_df$Year, solar_df$Month, solar_df$Day,
+                                  solar_df$Hour, solar_df$Minute, sep = &quot;-&quot;),
+                            format = &quot;%Y-%m-%d-%H-%M&quot;)
+filtered_solar_df &lt;- solar_df %&gt;%
+  filter(Solar.Zenith.Angle &lt;= 90)
+
+lat &lt;- 35.6870
+
+solar_df &lt;- solar_df %&gt;%
+  mutate(Day_Index = as.numeric(format(Date, &quot;%j&quot;)))
+
+hourly_solar_df_1 &lt;- solar_df %&gt;%
+  group_by(Day_Index, Hour) %&gt;%
+  summarise(Hg_hourly = sum(Clearsky.GHI))
+
+hourly_solar_df_2 &lt;- solar_df %&gt;%
+  group_by(Day_Index, Hour) %&gt;%
+  summarise(Hd_hourly = sum(Clearsky.DHI))
+
+daily_solar_df_1 &lt;- hourly_solar_df_1 %&gt;%
+  group_by(Day_Index) %&gt;%
+  summarise(Hg = sum(Hg_hourly))
+
+daily_solar_df_2 &lt;- hourly_solar_df_2 %&gt;%
+  group_by(Day_Index) %&gt;%
+  summarise(Hd = sum(Hd_hourly))
+
+daily_albedo_df &lt;- solar_df %&gt;%
+  group_by(Day_Index) %&gt;%
+  summarise(Albedo = mean(Surface.Albedo))
+
+decl_angle_form &lt;- data.frame(Day = numeric(),
+                       DeclinationAngle = numeric())
+for (n in 1:365) {
+  declination_angle_degr &lt;- (23.45*sin(2*pi*(284+n)/365))
+  decl_angle_form &lt;- decl_angle_form %&gt;%
+    add_row(Day = n, DeclinationAngle = declination_angle_degr)
+}
+decl_angle_form$lat &lt;- lat
+decl_angle_form$lat_rad &lt;- decl_angle_form$lat * pi / 180
+decl_angle_form$delta_rad &lt;- decl_angle_form$DeclinationAngle * pi / 180
+decl_angle_form$hour_angle_sunset &lt;- acos(-tan(decl_angle_form$lat_rad) * tan(decl_angle_form$delta_rad))
+decl_angle_form$hour_angle_sunset &lt;- acos(-tan(decl_angle_form$lat_rad) * tan(decl_angle_form$delta_rad))
+decl_angle_form &lt;- decl_angle_form %&gt;%
+  left_join(daily_solar_df_1, by = c(&quot;Day&quot; = &quot;Day_Index&quot;))
+decl_angle_form &lt;- decl_angle_form %&gt;%
+  left_join(daily_solar_df_2, by = c(&quot;Day&quot; = &quot;Day_Index&quot;))
+decl_angle_form &lt;- decl_angle_form %&gt;%
+  left_join(daily_albedo_df, by = c(&quot;Day&quot; = &quot;Day_Index&quot;))
+
+
+
+
+calculate_Ht &lt;- function(Hg, Hd, Albedo, lat_rad, DeclinationAngle, hour_angle_sunset, beta_rad) {
+  Rb &lt;- (cos(lat_rad - beta_rad) * cos(DeclinationAngle) * sin(hour_angle_sunset) +
+          hour_angle_sunset * sin(lat_rad - beta_rad) * sin(DeclinationAngle)) /
+        (cos(lat_rad) * cos(DeclinationAngle) * sin(hour_angle_sunset) +
+          hour_angle_sunset * sin(lat_rad) * sin(DeclinationAngle))
+  
+  Ht &lt;- (Hg - Hd) * Rb + Hg * Albedo * (1 - cos(beta_rad)) / 2 + Hd * (1 + cos(beta_rad)) / 2
+  return(Ht)
+}
+
+optimal_betas &lt;- list()
+
+# Loop through each row of decl_angle_form
+for (i in 1:nrow(decl_angle_form)) {
+  row &lt;- decl_angle_form[i, ]
+  
+  # Get the necessary variables for the Ht function
+  Hg &lt;- row$Hg
+  Hd &lt;- row$Hd
+  Albedo &lt;- row$Albedo
+  lat_rad &lt;- row$lat_rad
+  DeclinationAngle &lt;- row$delta_rad
+  hour_angle_sunset &lt;- row$hour_angle_sunset
+  
+  # Define the range of beta values from 0 to 2*pi by 0.01
+  beta_range &lt;- seq(0, pi, by = 0.01)
+  
+  # Calculate Ht for each beta value and find the maximum
+  max_Ht &lt;- -Inf
+  optimal_beta &lt;- NULL
+  
+  for (beta in beta_range) {
+    Ht &lt;- calculate_Ht(Hg, Hd, Albedo, lat_rad, DeclinationAngle, hour_angle_sunset, beta)
+    
+    if (Ht &gt; max_Ht) {
+      max_Ht &lt;- Ht
+      optimal_beta &lt;- beta
+    }
+  }
+  
+  # Store the results in the list
+  optimal_betas[[i]] &lt;- list(Day = row$Day, Optimal_Beta = optimal_beta, Max_Ht = max_Ht)
+}
+
+optimal_beta_df &lt;- lapply(optimal_betas, function(x) {
+  data.frame(Day = x$Day, Optimal_Beta_Deg = x$Optimal_Beta * 180 / pi)
+}) %&gt;%
+  bind_rows()
+
+# Plot the optimal beta values against the day index
+ggplot(optimal_beta_df, aes(x = Day, y = Optimal_Beta_Deg)) +
+  geom_line() +
+  labs(title = &quot;Optimal Beta Angle vs. Day Index&quot;,
+       x = &quot;Day Index&quot;,
+       y = &quot;Optimal Beta Angle (Degrees)&quot;) +
+  theme_minimal()
+
+yearly_beta_opt &lt;- decl_angle_form %&gt;%
+  summarise(yearly_Hg = mean(Hg),
+            yearly_Hd = mean(Hd),
+            yearly_Albedo = mean(Albedo),
+            yearly_delta_rad = weighted.mean(delta_rad, Hg),
+            yearly_wss = weighted.mean(hour_angle_sunset, Hg))
+
+beta_range_for_avr &lt;- seq(0, pi/2, by = 0.01)
+
+Ht_results_df &lt;- data.frame(Beta_Deg = numeric(),
+                            Ht = numeric())
+
+for (beta in beta_range_for_avr) {
+  # Calculate Ht for the given beta using the yearly_beta_opt values
+  Ht &lt;- calculate_Ht(yearly_beta_opt$yearly_Hg, yearly_beta_opt$yearly_Hd,
+                     yearly_beta_opt$yearly_Albedo, lat_rad, yearly_beta_opt$yearly_delta_rad,
+                     yearly_beta_opt$yearly_wss, beta)
+  
+  # Save the results in the Ht_results list
+  Ht_results_df &lt;- bind_rows(Ht_results_df, data.frame(Beta_Deg = beta * 180 / pi, Ht = Ht))
+
+}
+
+# universal prediction
+max_Ht_index &lt;- which.max(Ht_results_df$Ht)
+optimal_beta &lt;- Ht_results_df$Beta_Deg[max_Ht_index]
+optimal_Ht &lt;- Ht_results_df$Ht[max_Ht_index]
+
+ggplot(Ht_results_df, aes(x = Beta_Deg, y = Ht)) +
+  geom_line() +
+  geom_point(x = optimal_beta, y = optimal_Ht, color = &quot;blue&quot;, size = 3) +
+  labs(title = &quot;Ht vs. Beta Angle&quot;,
+       x = &quot;Beta Angle (Degrees)&quot;,
+       y = &quot;Ht&quot;) +
+  theme_minimal()
+# for (result in optimal_betas) {
+#   cat(&quot;Day:&quot;, result$Day, &quot;\n&quot;)
+#   cat(&quot;Optimal Beta (in radians):&quot;, result$Optimal_Beta, &quot;\n&quot;)
+#   cat(&quot;Max Ht:&quot;, result$Max_Ht, &quot;\n\n&quot;)
+# }
+
+decl_angle &lt;- data.frame(Day = numeric(),
+                       DeclinationAngle = numeric())
+for (n in 1:365) {
+  declination_angle_degr &lt;- (23.45*sin(2*pi*(284+n)/365))
+  decl_angle &lt;- decl_angle %&gt;%
+    add_row(Day = n, DeclinationAngle = declination_angle_degr)
+}
+calculate_optimal_tilt &lt;- function(delta) {
+  beta_opt &lt;- 35.15 - 137 * delta/360 - 0.007 * delta^2/(360^2)
+  return(beta_opt)
+}
+
+decl_angle$OptimalTiltAngle &lt;- calculate_optimal_tilt(decl_angle$DeclinationAngle)
+
+ggplot(data = decl_angle, aes(x = Day, y = OptimalTiltAngle)) +
+  geom_line(color = &quot;blue&quot;) +
+  labs(title = &quot;Optimal Tilt Angle for Solar Panels&quot;,
+       x = &quot;Day of Year&quot;,
+       y = &quot;Optimal Tilt Angle (degrees)&quot;)</code></pre>
+</div>
 
 
 
