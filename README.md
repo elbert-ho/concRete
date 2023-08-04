@@ -7,7 +7,7 @@ To access datasets via Google Drive please use this [link](https://drive.google.
 
 ## Files Provided
 The files in this GitHub are as follows<br>
-**data:** All raw and cleaned data is contained in this folder. Preprocessed data is not stored. <br>
+**data:** All raw and cleaned data is contained in this folder. Preprocessed data is not stored. See *data/DataOverview.md* for more details<br>
 **figures:** Figures generated and used in the slides<br>
 **HTMLs:** Rendered HTMLs for files other than the FinalReport<br>
 **Misc:** Scripts and other files not in R<br>
