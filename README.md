@@ -3,7 +3,7 @@
 As the world transitions from fossil fuels to renewable energy, it is critical to maximize the efficiency in which we harness this energy. To address this concern, we examined the effect of weather on solar irradiance, with our goal to ultimately predict the energy output of a hypothetical solar farm. In this study, we collected solar irradiance data, and utilized multiple machine learning models to predict photovoltaic power production based on weather. Different models were compared in order to find an ideal model that provides both high accuracy and low computational cost. We found that the XGBoost model provided the lowest RMSE . Using the XGBoost model, a heat map was created to find the most efficient location for solar panel placement in Santa Fe. 
 
 ## Dataset via Google Drive
-To access datasets via Google Drive please use this [link](https://drive.google.com/drive/folders/1IQqRnN7Wx6ro6TuHTYy04AiTSbonWtF_?usp=drive_link)
+To access datasets via Google Drive please use this [link](https://drive.google.com/drive/folders/1IQqRnN7Wx6ro6TuHTYy04AiTSbonWtF_?usp=sharing)
 
 ## Files Provided
 The files in this GitHub are as follows<br>
