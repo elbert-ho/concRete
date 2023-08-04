@@ -869,9 +869,21 @@ test_x &lt;- data.matrix(data.test[,-ncol(data.train)])
 test_y &lt;- data.matrix(data.test[,ncol(data.train)])
 val_x &lt;- data.matrix(data.val[,-ncol(data.train)])
 val_y &lt;- data.matrix(data.val[,ncol(data.train)])</code></pre>
-<pre class="r"><code>fitSVR &lt;- svm(GHI ~ ., data.train)
-fitLM &lt;- lm(GHI ~ ., data.train)
+<pre class="r"><code># SVR
+fitSVR &lt;- svm(GHI ~ ., data.train)
+
+# Random Forest
 fitRF &lt;- randomForest(GHI ~ ., data=data.train, ntree=200)
+
+# LM + Backwards Elimination
+fitLM &lt;- lm(GHI ~ ., data.train)
+fitLM &lt;- update(fitLM, .~. - cos.minute)
+fitLM &lt;- update(fitLM, .~. - X.Cloud.Type.10)
+fitLM &lt;- update(fitLM, .~. - X.Cloud.Type.4)
+fitLM &lt;- update(fitLM, .~. - sin.day)
+fitLM &lt;- update(fitLM, .~. - cos.day)
+fitLM &lt;- update(fitLM, .~. - X.Wind.Speed.)
+fitLM &lt;- update(fitLM, .~. - sin.minute)
 
 # XGB training
 xgb_train &lt;- xgb.DMatrix(data = train_x, label = train_y)

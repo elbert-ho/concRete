@@ -516,9 +516,21 @@ val_y <- data.matrix(data.val[,ncol(data.train)])
 ```
 
 ```{r, model training}
+# SVR
 fitSVR <- svm(GHI ~ ., data.train)
-fitLM <- lm(GHI ~ ., data.train)
+
+# Random Forest
 fitRF <- randomForest(GHI ~ ., data=data.train, ntree=200)
+
+# LM + Backwards Elimination
+fitLM <- lm(GHI ~ ., data.train)
+fitLM <- update(fitLM, .~. - cos.minute)
+fitLM <- update(fitLM, .~. - X.Cloud.Type.10)
+fitLM <- update(fitLM, .~. - X.Cloud.Type.4)
+fitLM <- update(fitLM, .~. - sin.day)
+fitLM <- update(fitLM, .~. - cos.day)
+fitLM <- update(fitLM, .~. - X.Wind.Speed.)
+fitLM <- update(fitLM, .~. - sin.minute)
 
 # XGB training
 xgb_train <- xgb.DMatrix(data = train_x, label = train_y)
